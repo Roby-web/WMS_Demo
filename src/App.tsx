@@ -148,11 +148,13 @@ export default function App() {
     setSelectedStatFilter(null);
     showToast(`Đang hiển thị ${matchedTopics.length} đề tài trùng khớp với tin Trendsense`, 'info');
     
-    // Smooth scroll down to table
-    const tableEl = document.getElementById('topics-table-container') || document.getElementById('main-content-dashboard');
-    if (tableEl) {
-      tableEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    // Smooth scroll down to review result box / table
+    setTimeout(() => {
+      const targetEl = document.getElementById('trendsense-review-result-box') || document.getElementById('topics-table-container');
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 50);
   };
 
   const handleClearTrendsenseFilter = () => {
@@ -318,9 +320,35 @@ export default function App() {
             />
           )}
 
-          {/* ================= ACTIVE TRENDSENSE FILTER BAR (IF TRIGGERED BY CHECK ĐỀ TÀI) ================= */}
+          {/* ================= FILTER BAR & QUICK TABS ================= */}
+          <FilterBar
+            activeTab={activeTab}
+            setActiveTab={(tab) => {
+              setActiveTab(tab);
+              if (trendsenseMatchedTopicIds) handleClearTrendsenseFilter();
+            }}
+            tabCounts={tabCounts}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            selectedStatus={selectedStatus}
+            setSelectedStatus={setSelectedStatus}
+            selectedUserNeed={selectedUserNeed}
+            setSelectedUserNeed={setSelectedUserNeed}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            onOpenCreateModal={() => {
+              setTrendsenseInitialData(null);
+              setIsCreateModalOpen(true);
+            }}
+            selectedStatFilter={selectedStatFilter}
+            onClearStatFilter={() => setSelectedStatFilter(null)}
+          />
+
+          {/* ================= ACTIVE TRENDSENSE FILTER BAR (KẾT QUẢ ĐỐI SOÁT - DƯỚI BỘ LỌC, TRÊN DANH SÁCH ĐỀ TÀI) ================= */}
           {activeTrendsenseFilterTitle && (
-            <div className="mb-4 bg-rose-50/90 border border-rose-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+            <div id="trendsense-review-result-box" className="mb-4 bg-rose-50/90 border border-rose-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
               <div className="flex items-start sm:items-center space-x-2.5">
                 <div className="w-7 h-7 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0">
                   <Zap className="w-4 h-4" />
@@ -351,32 +379,6 @@ export default function App() {
               </div>
             </div>
           )}
-
-          {/* ================= FILTER BAR & QUICK TABS ================= */}
-          <FilterBar
-            activeTab={activeTab}
-            setActiveTab={(tab) => {
-              setActiveTab(tab);
-              if (trendsenseMatchedTopicIds) handleClearTrendsenseFilter();
-            }}
-            tabCounts={tabCounts}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            selectedStatus={selectedStatus}
-            setSelectedStatus={setSelectedStatus}
-            selectedUserNeed={selectedUserNeed}
-            setSelectedUserNeed={setSelectedUserNeed}
-            dateRange={dateRange}
-            setDateRange={setDateRange}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            onOpenCreateModal={() => {
-              setTrendsenseInitialData(null);
-              setIsCreateModalOpen(true);
-            }}
-            selectedStatFilter={selectedStatFilter}
-            onClearStatFilter={() => setSelectedStatFilter(null)}
-          />
 
           {/* ================= TOPICS TABLE ================= */}
           <div id="topics-table-container">
