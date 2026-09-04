@@ -79,6 +79,9 @@ export default function App() {
       if (selectedStatFilter) {
         if (!topic.isImportant) return false;
 
+        if (selectedStatFilter === 'all_important') {
+          return true;
+        }
         if (selectedStatFilter === 'overdue') {
           return (topic.daysUntilDeadline < 0 && topic.status !== 'Hoàn thành') || topic.status === 'Quá hạn';
         }
@@ -92,7 +95,7 @@ export default function App() {
           return !topic.isDueToday && topic.daysUntilDeadline > 0 && topic.daysUntilDeadline <= 3;
         }
         if (selectedStatFilter === 'due_over_3_days') {
-          return !topic.isDueToday && topic.daysUntilDeadline > 3;
+          return !topic.isDueToday && topic.daysUntilDeadline > 3 && topic.daysUntilDeadline < 900;
         }
       }
 

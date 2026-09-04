@@ -321,3 +321,4 @@ export const ImportantTopicsStats: React.FC<ImportantTopicsStatsProps> = ({
     </section>
   );
 };
+

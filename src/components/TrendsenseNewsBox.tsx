@@ -31,8 +31,30 @@ export const TrendsenseNewsBox: React.FC<TrendsenseNewsBoxProps> = ({
 }) => {
   const [news, setNews] = useState<TrendsenseNewsItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [lastUpdated, setLastUpdated] = useState<Date>(() => new Date(Date.now() - 3 * 60 * 1000));
+  const [timeAgoText, setTimeAgoText] = useState<string>("Cập nhật 3' trước");
   // Store checking state per news item: key is news.id or title -> { checked: boolean, matchedTopics: Topic[] }
   const [checkedResults, setCheckedResults] = useState<Record<string, { checked: boolean; matched: Topic[] }>>({});
+
+  // Helper to format time ago for last updated
+  const getFormattedUpdatedTime = (date: Date): string => {
+    const diffSec = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (diffSec < 45) return 'Cập nhật vừa xong';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `Cập nhật ${diffMin}' trước`;
+    const diffHours = Math.floor(diffMin / 60);
+    return `Cập nhật ${diffHours}h trước`;
+  };
+
+  // Keep timeAgoText updated
+  useEffect(() => {
+    const updateText = () => {
+      setTimeAgoText(getFormattedUpdatedTime(lastUpdated));
+    };
+    updateText();
+    const interval = setInterval(updateText, 30000);
+    return () => clearInterval(interval);
+  }, [lastUpdated]);
 
   // Fetch initial news from Google Sheets
   useEffect(() => {
@@ -78,6 +100,7 @@ export const TrendsenseNewsBox: React.FC<TrendsenseNewsBoxProps> = ({
     setIsLoading(true);
     const data = await fetchTrendsenseNews();
     setNews(data);
+    setLastUpdated(new Date());
     setIsLoading(false);
   };
 
@@ -123,21 +146,24 @@ export const TrendsenseNewsBox: React.FC<TrendsenseNewsBoxProps> = ({
       className="bg-white rounded-lg border border-gray-200/90 shadow-2xs p-3.5 h-full flex flex-col justify-between"
     >
       {/* Box Header */}
-      <div className="flex items-center justify-between gap-2 pb-2 mb-2.5 border-b border-gray-100">
-        <div className="flex items-center space-x-2">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600"></span>
-          </span>
-          <h2 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
-            Tin mới - Trendsense
-          </h2>
-          <span className="text-[11px] font-semibold px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200">
-            Trực tiếp
-          </span>
+      <div className="flex items-start justify-between gap-2 pb-2 mb-2.5 border-b border-gray-100">
+        <div>
+          <div className="flex items-center space-x-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600"></span>
+            </span>
+            <h2 className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+              Tin mới - Trendsense
+            </h2>
+          </div>
+          <div className="text-[11px] text-gray-500 font-normal mt-0.5 flex items-center gap-1 pl-4">
+            <Clock className="w-3 h-3 text-gray-400" />
+            <span>{timeAgoText}</span>
+          </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 pt-0.5">
           <button
             onClick={handleRefresh}
             title="Làm mới dữ liệu từ Trendsense"
