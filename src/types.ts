@@ -2,6 +2,8 @@ export type TopicStatus = 'Chờ duyệt' | 'Đang triển khai' | 'Lên kế ho
 
 export type PriorityLevel = 'Quan trọng' | 'Bình thường' | 'Ưu tiên cao';
 
+export type UserRole = 'Ban biên tập' | 'Trưởng ban' | 'Phóng viên';
+
 export interface Topic {
   id: string;
   stt: number;
@@ -24,6 +26,8 @@ export interface Topic {
   tags?: string[];
   description?: string;
   createdAt: string;
+  articleStatus?: 'Chưa tạo bài' | 'Đã tạo bài' | string;
+  publishPeriod?: 'in_range_1_7' | 'after_7' | 'no_deadline';
 }
 
 export interface TrendsenseNewsItem {

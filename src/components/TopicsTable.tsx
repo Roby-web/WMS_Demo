@@ -1,17 +1,11 @@
 import React from 'react';
 import { 
   MessageSquare, 
-  Tag, 
-  Star, 
   ExternalLink, 
-  FileEdit, 
-  Trash2, 
-  CheckCircle2, 
-  Clock, 
+  Copy,
   AlertTriangle,
-  Send,
-  Zap,
-  MoreHorizontal
+  Star,
+  Zap
 } from 'lucide-react';
 import { Topic, TopicStatus } from '../types';
 
@@ -30,52 +24,23 @@ export const TopicsTable: React.FC<TopicsTableProps> = ({
   onRequestCancel,
   onCreateArticle,
   onOpenArticle,
-  onStatusChange,
 }) => {
-  const getStatusBadge = (status: TopicStatus) => {
+  const getStatusDisplay = (status: TopicStatus) => {
     switch (status) {
-      case 'Chờ duyệt':
-        return (
-          <span className="inline-block px-3 py-1 text-xs font-semibold rounded-md border border-amber-500 text-amber-700 bg-white shadow-2xs">
-            Chờ duyệt
-          </span>
-        );
       case 'Đang triển khai':
-        return (
-          <span className="inline-block px-3 py-1 text-xs font-semibold rounded-md border border-sky-500 text-sky-600 bg-white shadow-2xs">
-            Đang triển khai
-          </span>
-        );
+        return <span className="text-xs font-semibold text-sky-600">Đang triển khai</span>;
       case 'Lên kế hoạch':
-        return (
-          <span className="inline-block px-3 py-1 text-xs font-semibold rounded-md border border-blue-500 text-blue-600 bg-white shadow-2xs">
-            Lên kế hoạch
-          </span>
-        );
+        return <span className="text-xs font-semibold text-sky-600">Lên kế hoạch</span>;
       case 'Hoàn thành':
-        return (
-          <span className="inline-block px-3 py-1 text-xs font-semibold rounded-md border border-emerald-500 text-emerald-600 bg-white shadow-2xs">
-            Hoàn thành
-          </span>
-        );
-      case 'Từ chối':
-        return (
-          <span className="inline-block px-3 py-1 text-xs font-semibold rounded-md border border-gray-400 text-gray-600 bg-white shadow-2xs">
-            Từ chối
-          </span>
-        );
+        return <span className="text-xs font-semibold text-emerald-600">Hoàn thành</span>;
+      case 'Chờ duyệt':
+        return <span className="text-xs font-semibold text-amber-600">Chờ duyệt</span>;
       case 'Quá hạn':
-        return (
-          <span className="inline-block px-3 py-1 text-xs font-semibold rounded-md border border-rose-500 text-rose-600 bg-white shadow-2xs">
-            Quá hạn
-          </span>
-        );
+        return <span className="text-xs font-semibold text-rose-600">Quá hạn</span>;
+      case 'Từ chối':
+        return <span className="text-xs font-medium text-gray-400">Từ chối</span>;
       default:
-        return (
-          <span className="inline-block px-3 py-1 text-xs font-medium rounded-md border border-gray-300 text-gray-700 bg-white">
-            {status}
-          </span>
-        );
+        return <span className="text-xs font-medium text-gray-600">{status}</span>;
     }
   };
 
@@ -97,33 +62,40 @@ export const TopicsTable: React.FC<TopicsTableProps> = ({
         <table className="w-full text-left border-collapse">
           {/* Table Header matching screenshot */}
           <thead>
-            <tr className="bg-gray-50/80 border-b border-gray-200 text-xs font-bold text-gray-700 tracking-wider">
-              <th className="py-3 px-4 w-14 text-center">STT</th>
-              <th className="py-3 px-4 min-w-[320px]">Đề tài</th>
-              <th className="py-3 px-4 w-36 text-center">Trạng thái</th>
-              <th className="py-3 px-4 w-32">Hạn</th>
+            <tr className="bg-gray-50/90 border-b border-gray-200 text-xs font-bold text-gray-700 tracking-wider">
+              <th className="py-3 px-3 w-12 text-center">STT</th>
+              <th className="py-3 px-4 min-w-[280px]">Đề tài</th>
+              <th className="py-3 px-4 w-32">Ban</th>
+              <th className="py-3 px-4 w-36">Trạng thái</th>
+              <th className="py-3 px-4 w-32">Bài viết</th>
+              <th className="py-3 px-4 w-32">Hạn đăng bài</th>
               <th className="py-3 px-4 w-28">User need</th>
-              <th className="py-3 px-4 min-w-[180px]">Hành động</th>
+              <th className="py-3 px-4 w-24 text-center">Hành động</th>
             </tr>
           </thead>
 
           {/* Table Body */}
           <tbody className="divide-y divide-gray-100 text-sm">
-            {topics.map((topic, index) => (
-              <tr
-                key={topic.id}
-                id={`topic-row-${topic.id}`}
-                className="hover:bg-amber-50/30 transition-colors group"
-              >
-                {/* STT */}
-                <td className="py-3.5 px-4 text-center font-medium text-gray-600 text-xs">
-                  {index + 1}
-                </td>
+            {topics.map((topic, index) => {
+              const articleStateText = topic.articleStatus 
+                ? topic.articleStatus 
+                : topic.status === 'Hoàn thành' 
+                ? 'Đã tạo bài' 
+                : 'Chưa tạo bài';
 
-                {/* Đề tài (Title + Tags + Comments) */}
-                <td className="py-3.5 px-4">
-                  <div className="space-y-1.5">
-                    {/* Title and Important star */}
+              return (
+                <tr
+                  key={topic.id}
+                  id={`topic-row-${topic.id}`}
+                  className="hover:bg-slate-50/60 transition-colors group"
+                >
+                  {/* STT */}
+                  <td className="py-3 px-3 text-center font-medium text-gray-600 text-xs">
+                    {index + 1}
+                  </td>
+
+                  {/* Đề tài */}
+                  <td className="py-3 px-4">
                     <div className="flex items-start gap-1.5">
                       {topic.isImportant && (
                         <span 
@@ -133,151 +105,95 @@ export const TopicsTable: React.FC<TopicsTableProps> = ({
                           <Star className="w-3.5 h-3.5 fill-amber-400" />
                         </span>
                       )}
+                      <div>
+                        <button
+                          onClick={() => onSelectTopic(topic)}
+                          className="text-left font-medium text-gray-900 hover:text-red-700 hover:underline transition-colors leading-snug cursor-pointer line-clamp-2"
+                        >
+                          {topic.title}
+                        </button>
+
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          {typeof topic.commentsCount === 'number' && topic.commentsCount > 0 && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.2 text-[11px] font-medium text-gray-600 rounded bg-gray-100 border border-gray-200">
+                              <MessageSquare className="w-3 h-3 text-gray-400" />
+                              <span>{topic.commentsCount}</span>
+                            </span>
+                          )}
+
+                          {(topic.fromTrendsense || topic.tags?.includes('Trendsense')) && (
+                            <span className="px-1.5 py-0.2 text-[10px] font-bold rounded bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-0.5">
+                              <Zap className="w-2.5 h-2.5 text-rose-600 fill-rose-100" />
+                              Trendsense
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Ban */}
+                  <td className="py-3 px-4 text-xs font-medium text-gray-700 whitespace-nowrap">
+                    {topic.department || 'Tin tức'}
+                  </td>
+
+                  {/* Trạng thái */}
+                  <td className="py-3 px-4 whitespace-nowrap">
+                    {getStatusDisplay(topic.status)}
+                  </td>
+
+                  {/* Bài viết */}
+                  <td className="py-3 px-4 text-xs font-normal text-gray-700 whitespace-nowrap">
+                    {articleStateText}
+                  </td>
+
+                  {/* Hạn đăng bài */}
+                  <td className="py-3 px-4 text-xs text-gray-700 whitespace-nowrap font-sans">
+                    {topic.deadline}
+                  </td>
+
+                  {/* User need */}
+                  <td className="py-3 px-4 text-xs font-medium text-gray-700 whitespace-nowrap">
+                    {topic.userNeed ? (
+                      <span className="text-gray-700 font-medium">
+                        {topic.userNeed}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </td>
+
+                  {/* Hành động */}
+                  <td className="py-3 px-4 text-xs text-center whitespace-nowrap">
+                    <div className="flex items-center justify-center gap-1.5">
                       <button
-                        onClick={() => onSelectTopic(topic)}
-                        className="text-left font-medium text-gray-900 hover:text-red-700 hover:underline transition-colors leading-snug cursor-pointer"
+                        onClick={() => {
+                          if (topic.status === 'Hoàn thành' || articleStateText === 'Đã tạo bài') {
+                            onOpenArticle(topic.id, topic.title);
+                          } else {
+                            onCreateArticle(topic.id, topic.title);
+                          }
+                        }}
+                        title="Mở bài viết"
+                        className="p-1.5 rounded-md border border-gray-200 hover:border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors cursor-pointer"
                       >
-                        {topic.title}
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          navigator.clipboard?.writeText(topic.title);
+                        }}
+                        title="Sao chép tiêu đề"
+                        className="p-1.5 rounded-md border border-gray-200 hover:border-gray-300 hover:bg-gray-100 text-gray-600 transition-colors cursor-pointer"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
                       </button>
                     </div>
-
-                    {/* Tags row: Trendsense, Gửi BBT, Ưu tiên, Comment count */}
-                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                      {(topic.fromTrendsense || topic.tags?.includes('Trendsense')) && (
-                        <span className="px-2 py-0.5 text-[11px] font-bold rounded bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-0.5">
-                          <Zap className="w-3 h-3 text-rose-600 fill-rose-100" />
-                          Trendsense
-                        </span>
-                      )}
-
-                      {topic.tags?.includes('Gửi BBT') && (
-                        <span className="px-2 py-0.5 text-[11px] font-semibold rounded bg-amber-50 text-amber-800 border border-amber-200">
-                          Gửi BBT
-                        </span>
-                      )}
-
-                      {topic.tags?.includes('Ưu tiên') && (
-                        <span className="px-2 py-0.5 text-[11px] font-semibold rounded bg-red-50 text-red-700 border border-red-200">
-                          Ưu tiên
-                        </span>
-                      )}
-
-                      {typeof topic.commentsCount === 'number' && topic.commentsCount > 0 && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 rounded bg-gray-100 border border-gray-200">
-                          <MessageSquare className="w-3 h-3 text-gray-500" />
-                          <span>{topic.commentsCount}</span>
-                        </span>
-                      )}
-
-                      {topic.department && (
-                        <span className="text-[11px] text-gray-400 hidden sm:inline-block">
-                          · {topic.department} ({topic.author})
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </td>
-
-                {/* Trạng thái */}
-                <td className="py-3.5 px-4 text-center">
-                  {getStatusBadge(topic.status)}
-                </td>
-
-                {/* Hạn */}
-                <td className="py-3.5 px-4 font-mono text-xs text-gray-700 whitespace-nowrap">
-                  <div className="flex items-center space-x-1">
-                    <span>{topic.deadline}</span>
-                  </div>
-                  {topic.isDueToday ? (
-                    <span className="text-[10px] text-rose-600 font-semibold block">Hôm nay</span>
-                  ) : topic.daysUntilDeadline > 0 && topic.daysUntilDeadline <= 3 ? (
-                    <span className="text-[10px] text-sky-600 font-semibold block">Còn {topic.daysUntilDeadline} ngày</span>
-                  ) : null}
-                </td>
-
-                {/* User need */}
-                <td className="py-3.5 px-4 text-xs font-medium text-gray-700">
-                  {topic.userNeed ? (
-                    <span className="px-2 py-0.5 bg-gray-100 rounded text-gray-700 border border-gray-200">
-                      {topic.userNeed}
-                    </span>
-                  ) : (
-                    <span className="text-gray-300">-</span>
-                  )}
-                </td>
-
-                {/* Hành động matching screenshot */}
-                <td className="py-3.5 px-4 text-xs">
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    {/* Action buttons depending on state */}
-                    {topic.status === 'Chờ duyệt' && (
-                      <button
-                        onClick={() => onRequestCancel(topic.id, topic.title)}
-                        className="text-gray-600 hover:text-rose-600 underline underline-offset-2 transition-colors cursor-pointer"
-                      >
-                        Yêu cầu huỷ
-                      </button>
-                    )}
-
-                    {topic.status === 'Đang triển khai' && (
-                      <>
-                        <button
-                          onClick={() => onCreateArticle(topic.id, topic.title)}
-                          className="text-gray-700 hover:text-blue-700 underline underline-offset-2 transition-colors cursor-pointer font-medium"
-                        >
-                          Tạo bài viết
-                        </button>
-                        <button
-                          onClick={() => onRequestCancel(topic.id, topic.title)}
-                          className="text-gray-500 hover:text-rose-600 underline underline-offset-2 transition-colors cursor-pointer"
-                        >
-                          Yêu cầu huỷ
-                        </button>
-                      </>
-                    )}
-
-                    {topic.status === 'Lên kế hoạch' && (
-                      <>
-                        <button
-                          onClick={() => onOpenArticle(topic.id, topic.title)}
-                          className="text-gray-700 hover:text-blue-700 underline underline-offset-2 transition-colors cursor-pointer font-medium"
-                        >
-                          Mở bài viết
-                        </button>
-                        <button
-                          onClick={() => onRequestCancel(topic.id, topic.title)}
-                          className="text-gray-500 hover:text-rose-600 underline underline-offset-2 transition-colors cursor-pointer"
-                        >
-                          Yêu cầu huỷ
-                        </button>
-                      </>
-                    )}
-
-                    {topic.status === 'Hoàn thành' && (
-                      <button
-                        onClick={() => onOpenArticle(topic.id, topic.title)}
-                        className="text-emerald-700 hover:text-emerald-900 underline underline-offset-2 transition-colors cursor-pointer font-medium"
-                      >
-                        Xem bài đã xuất bản
-                      </button>
-                    )}
-
-                    {topic.status === 'Từ chối' && (
-                      <span className="text-gray-400 italic">Đã đóng</span>
-                    )}
-
-                    {topic.status === 'Quá hạn' && (
-                      <button
-                        onClick={() => onCreateArticle(topic.id, topic.title)}
-                        className="text-rose-700 hover:text-rose-900 underline underline-offset-2 transition-colors cursor-pointer font-medium"
-                      >
-                        Xử lý gấp
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

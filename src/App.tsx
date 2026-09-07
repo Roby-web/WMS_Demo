@@ -9,10 +9,13 @@ import { TopicsTable } from './components/TopicsTable';
 import { CreateTopicModal } from './components/CreateTopicModal';
 import { TopicDetailModal } from './components/TopicDetailModal';
 import { INITIAL_TOPICS, INITIAL_NOTIFICATIONS } from './data/mockData';
-import { Topic, TopicStatus, ActiveFilterTab, NotificationItem, TrendsenseNewsItem } from './types';
+import { Topic, TopicStatus, ActiveFilterTab, NotificationItem, TrendsenseNewsItem, UserRole } from './types';
 import { CheckCircle, AlertCircle, Info, Zap, X } from 'lucide-react';
 
 export default function App() {
+  // User role state (Ban biên tập / Trưởng ban / Phóng viên)
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole>('Ban biên tập');
+
   // Navigation & layout state
   const [activeNav, setActiveNav] = useState('WMS');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -26,15 +29,21 @@ export default function App() {
   const [topics, setTopics] = useState<Topic[]>(INITIAL_TOPICS);
 
   // Filtering & Search state
-  const [activeTab, setActiveTab] = useState<ActiveFilterTab>('all');
   const [selectedStatFilter, setSelectedStatFilter] = useState<string | null>(null);
   const [activeTrendsenseFilterTitle, setActiveTrendsenseFilterTitle] = useState<string | null>(null);
   const [trendsenseMatchedTopicIds, setTrendsenseMatchedTopicIds] = useState<string[] | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedUserNeed, setSelectedUserNeed] = useState('all');
-  const [dateRange, setDateRange] = useState('1/1/2025 - 7/1/2025');
-  const [viewMode, setViewMode] = useState('default');
+  const [dateRange, setDateRange] = useState('1/1/2026 - 7/1/2026');
+
+  // Advanced filter states
+  const [selectedDeadlineRange, setSelectedDeadlineRange] = useState('all');
+  const [selectedDeadlineStatus, setSelectedDeadlineStatus] = useState('all');
+  const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [selectedAuthor, setSelectedAuthor] = useState('all');
+  const [selectedArticleStatus, setSelectedArticleStatus] = useState('all');
+  const [selectedPriority, setSelectedPriority] = useState('all');
 
   // Modals state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -77,38 +86,75 @@ export default function App() {
 
       // 1. Statistics Card Drilldown Filter
       if (selectedStatFilter) {
-        if (!topic.isImportant) return false;
-
+        // BBT Filters
         if (selectedStatFilter === 'all_important') {
-          return true;
+          if (!topic.isImportant) return false;
+        } else if (selectedStatFilter === 'range_1_to_7') {
+          if (!topic.isImportant) return false;
+          const match = topic.publishPeriod === 'in_range_1_7' || 
+            (topic.deadlineDate && topic.deadlineDate <= '2026-01-07' && topic.deadlineDate >= '2026-01-01');
+          if (!match) return false;
+        } else if (selectedStatFilter === 'da_xuat_ban') {
+          if (!topic.isImportant) return false;
+          if (topic.status !== 'Hoàn thành') return false;
+        } else if (selectedStatFilter === 'dang_trien_khai') {
+          if (!topic.isImportant) return false;
+          if (topic.status !== 'Đang triển khai' && topic.status !== 'Lên kế hoạch') return false;
+        } else if (selectedStatFilter === 'qua_han') {
+          if (!topic.isImportant) return false;
+          if (topic.status !== 'Quá hạn' && !(topic.daysUntilDeadline < 0 && topic.status !== 'Hoàn thành')) return false;
+        } else if (selectedStatFilter === 'after_7') {
+          if (!topic.isImportant) return false;
+          const match = topic.publishPeriod === 'after_7' || (topic.deadlineDate && topic.deadlineDate > '2026-01-07');
+          if (!match) return false;
+        } else if (selectedStatFilter === 'han_trong_3_ngay') {
+          if (!topic.isImportant) return false;
+          const match = (topic.publishPeriod === 'after_7' || (topic.deadlineDate && topic.deadlineDate > '2026-01-07')) && 
+            topic.daysUntilDeadline > 0 && topic.daysUntilDeadline <= 3;
+          if (!match) return false;
+        } else if (selectedStatFilter === 'han_sau_3_ngay') {
+          if (!topic.isImportant) return false;
+          const match = (topic.publishPeriod === 'after_7' || (topic.deadlineDate && topic.deadlineDate > '2026-01-07')) && 
+            topic.daysUntilDeadline > 3;
+          if (!match) return false;
+        } else if (selectedStatFilter === 'no_deadline') {
+          if (!topic.isImportant) return false;
+          if (topic.publishPeriod !== 'no_deadline' && topic.deadline !== 'Chưa có' && topic.deadline) return false;
         }
-        if (selectedStatFilter === 'overdue') {
-          return (topic.daysUntilDeadline < 0 && topic.status !== 'Hoàn thành') || topic.status === 'Quá hạn';
-        }
-        if (selectedStatFilter === 'due_today_completed') {
-          return (topic.isDueToday || topic.daysUntilDeadline === 0) && topic.status === 'Hoàn thành';
-        }
-        if (selectedStatFilter === 'due_today_pending') {
-          return (topic.isDueToday || topic.daysUntilDeadline === 0) && topic.status !== 'Hoàn thành' && topic.status !== 'Quá hạn';
-        }
-        if (selectedStatFilter === 'due_in_3_days') {
-          return !topic.isDueToday && topic.daysUntilDeadline > 0 && topic.daysUntilDeadline <= 3;
-        }
-        if (selectedStatFilter === 'due_over_3_days') {
-          return !topic.isDueToday && topic.daysUntilDeadline > 3 && topic.daysUntilDeadline < 900;
+
+        // Trưởng ban Filters (12 Đề tài cần thực hiện)
+        else if (selectedStatFilter === 'all_truongban') {
+          if (topic.publishPeriod === 'no_deadline' || topic.deadline === 'Chưa có' || !topic.deadline) return false;
+        } else if (selectedStatFilter === 'tb_range_1_to_7') {
+          if (topic.publishPeriod === 'no_deadline' || topic.deadline === 'Chưa có' || !topic.deadline) return false;
+          const match = topic.publishPeriod === 'in_range_1_7' || 
+            (topic.deadlineDate && topic.deadlineDate <= '2026-01-07' && topic.deadlineDate >= '2026-01-01');
+          if (!match) return false;
+        } else if (selectedStatFilter === 'tb_hoan_thanh') {
+          if (topic.status !== 'Hoàn thành') return false;
+        } else if (selectedStatFilter === 'tb_da_tao_bai') {
+          if (topic.status === 'Hoàn thành') return false;
+          if (topic.articleStatus !== 'Đã tạo bài') return false;
+        } else if (selectedStatFilter === 'tb_chua_tao_bai') {
+          if (topic.status === 'Hoàn thành' || topic.status === 'Quá hạn') return false;
+          if (topic.articleStatus !== 'Chưa tạo bài') return false;
+        } else if (selectedStatFilter === 'tb_qua_han') {
+          if (topic.status !== 'Quá hạn' && !(topic.daysUntilDeadline < 0 && topic.status !== 'Hoàn thành')) return false;
+        } else if (selectedStatFilter === 'tb_after_7') {
+          const match = topic.publishPeriod === 'after_7' || (topic.deadlineDate && topic.deadlineDate > '2026-01-07');
+          if (!match) return false;
+        } else if (selectedStatFilter === 'tb_han_trong_3_ngay') {
+          const match = (topic.publishPeriod === 'after_7' || (topic.deadlineDate && topic.deadlineDate > '2026-01-07')) && 
+            topic.daysUntilDeadline > 0 && topic.daysUntilDeadline <= 3;
+          if (!match) return false;
+        } else if (selectedStatFilter === 'tb_han_sau_3_ngay') {
+          const match = (topic.publishPeriod === 'after_7' || (topic.deadlineDate && topic.deadlineDate > '2026-01-07')) && 
+            topic.daysUntilDeadline > 3;
+          if (!match) return false;
         }
       }
 
-      // 2. Tab filtering (only when not drilling into trendsense matched list)
-      if (!selectedStatFilter && !trendsenseMatchedTopicIds) {
-        if (activeTab === 'assigned' && !topic.isEditorAssigned) return false;
-        if (activeTab === 'important' && !topic.isImportant) return false;
-        if (activeTab === 'completed' && topic.status !== 'Hoàn thành') return false;
-        if (activeTab === 'in_progress' && topic.status !== 'Đang triển khai') return false;
-        if (activeTab === 'overdue' && topic.status !== 'Quá hạn') return false;
-      }
-
-      // 3. Search query
+      // 2. Search query
       if (searchTerm.trim()) {
         const query = searchTerm.toLowerCase();
         const matchTitle = topic.title.toLowerCase().includes(query);
@@ -117,19 +163,92 @@ export default function App() {
         if (!matchTitle && !matchAuthor && !matchDept) return false;
       }
 
-      // 4. Status dropdown filter
+      // 3. Status dropdown filter
       if (selectedStatus !== 'all' && topic.status !== selectedStatus) {
         return false;
       }
 
-      // 5. User Need dropdown filter
+      // 4. User Need dropdown filter
       if (selectedUserNeed !== 'all' && topic.userNeed !== selectedUserNeed) {
         return false;
       }
 
+      // 5. Advanced Deadline Range Filter (Hạn hoàn thành / hạn đăng bài)
+      if (selectedDeadlineRange !== 'all') {
+        if (selectedDeadlineRange === 'in_range_1_7') {
+          const match = topic.publishPeriod === 'in_range_1_7' || 
+            (topic.deadlineDate && topic.deadlineDate <= '2026-01-07' && topic.deadlineDate >= '2026-01-01');
+          if (!match) return false;
+        } else if (selectedDeadlineRange === 'after_7') {
+          const match = topic.publishPeriod === 'after_7' || (topic.deadlineDate && topic.deadlineDate > '2026-01-07');
+          if (!match) return false;
+        } else if (selectedDeadlineRange === 'today') {
+          if (!topic.isDueToday && topic.daysUntilDeadline !== 0) return false;
+        } else if (selectedDeadlineRange === 'no_deadline') {
+          if (topic.publishPeriod !== 'no_deadline' && topic.deadline !== 'Chưa có' && topic.deadline) return false;
+        }
+      }
+
+      // 6. Advanced Deadline Status Filter (Tình trạng hạn)
+      if (selectedDeadlineStatus !== 'all') {
+        if (selectedDeadlineStatus === 'due_today') {
+          if (!topic.isDueToday && topic.daysUntilDeadline !== 0) return false;
+        } else if (selectedDeadlineStatus === 'within_3_days') {
+          if (!(topic.daysUntilDeadline > 0 && topic.daysUntilDeadline <= 3)) return false;
+        } else if (selectedDeadlineStatus === 'after_3_days') {
+          if (!(topic.daysUntilDeadline > 3)) return false;
+        } else if (selectedDeadlineStatus === 'overdue') {
+          const isOverdue = topic.status === 'Quá hạn' || (topic.daysUntilDeadline < 0 && topic.status !== 'Hoàn thành');
+          if (!isOverdue) return false;
+        } else if (selectedDeadlineStatus === 'on_time') {
+          const isOnTime = topic.status === 'Hoàn thành' || (topic.daysUntilDeadline >= 0 && topic.status !== 'Quá hạn');
+          if (!isOnTime) return false;
+        } else if (selectedDeadlineStatus === 'no_deadline') {
+          if (topic.publishPeriod !== 'no_deadline' && topic.deadline !== 'Chưa có' && topic.deadline) return false;
+        }
+      }
+
+      // 7. Advanced Department Filter (Cấp Trưởng ban: Bỏ lọc theo ban)
+      if (currentUserRole !== 'Trưởng ban' && selectedDepartment !== 'all' && topic.department !== selectedDepartment) {
+        return false;
+      }
+
+      // 8. Advanced Author Filter (Cấp Ban biên tập: Bỏ lọc theo phóng viên)
+      if (currentUserRole !== 'Ban biên tập' && selectedAuthor !== 'all' && topic.author !== selectedAuthor) {
+        return false;
+      }
+
+      // 9. Advanced Article Status Filter
+      if (selectedArticleStatus !== 'all') {
+        const hasArticle = topic.articleStatus === 'Đã tạo bài' || topic.status === 'Hoàn thành';
+        if (selectedArticleStatus === 'Đã tạo bài' && !hasArticle) return false;
+        if (selectedArticleStatus === 'Chưa tạo bài' && hasArticle) return false;
+      }
+
+      // 10. Advanced Priority Filter
+      if (selectedPriority !== 'all') {
+        if (selectedPriority === 'important' && !topic.isImportant) return false;
+        if (selectedPriority === 'trendsense' && !topic.fromTrendsense && !topic.tags?.includes('Trendsense')) return false;
+        if (selectedPriority === 'editor' && !topic.isEditorAssigned && !topic.tags?.includes('Gửi BBT')) return false;
+      }
+
       return true;
     });
-  }, [topics, trendsenseMatchedTopicIds, selectedStatFilter, activeTab, searchTerm, selectedStatus, selectedUserNeed]);
+  }, [
+    topics, 
+    trendsenseMatchedTopicIds, 
+    selectedStatFilter, 
+    searchTerm, 
+    selectedStatus, 
+    selectedUserNeed,
+    selectedDeadlineRange,
+    selectedDeadlineStatus,
+    selectedDepartment,
+    selectedAuthor,
+    selectedArticleStatus,
+    selectedPriority,
+    currentUserRole
+  ]);
 
   // Handlers for Trendsense Actions
   const handleOpenCreateModalFromTrendsense = (newsItem: TrendsenseNewsItem) => {
@@ -251,13 +370,18 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Header */}
+      {/* Main Header with 3-Level Role Selector */}
       <Header
         activeNav={activeNav}
         setActiveNav={setActiveNav}
         unreadCount={notifications.length}
         showNotificationBanner={showNotificationBanner}
         setShowNotificationBanner={setShowNotificationBanner}
+        userRole={currentUserRole}
+        setUserRole={(role) => {
+          setCurrentUserRole(role);
+          showToast(`Đã chuyển cấp sang: ${role}`, 'info');
+        }}
       />
 
       {/* Workspace Body: Sidebar + Main Content */}
@@ -275,10 +399,55 @@ export default function App() {
         />
 
         {/* Center Main Dashboard Canvas */}
-        <main id="main-content-dashboard" className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7 max-w-[1600px] mx-auto w-full">
+        <main id="main-content-dashboard" className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7 max-w-[1600px] mx-auto w-full space-y-4">
           
-          {/* ================= TOP SECTION: TIN MỚI TRENDSENSE (TRÁI) & TIẾN ĐỘ ĐỀ TÀI QUAN TRỌNG (PHẢI) ================= */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-4 items-stretch">
+          {/* ================= 1. BỘ LỌC ĐƯA LÊN ĐẦU TIÊN (KÈM BỘ LỌC NÂNG CAO) ================= */}
+          <FilterBar
+            userRole={currentUserRole}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            selectedStatus={selectedStatus}
+            setSelectedStatus={setSelectedStatus}
+            selectedUserNeed={selectedUserNeed}
+            setSelectedUserNeed={setSelectedUserNeed}
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+            onOpenCreateModal={() => {
+              setTrendsenseInitialData(null);
+              setIsCreateModalOpen(true);
+            }}
+            selectedStatFilter={selectedStatFilter}
+            onClearStatFilter={() => setSelectedStatFilter(null)}
+            selectedDeadlineRange={selectedDeadlineRange}
+            setSelectedDeadlineRange={setSelectedDeadlineRange}
+            selectedDeadlineStatus={selectedDeadlineStatus}
+            setSelectedDeadlineStatus={setSelectedDeadlineStatus}
+            selectedDepartment={selectedDepartment}
+            setSelectedDepartment={setSelectedDepartment}
+            selectedAuthor={selectedAuthor}
+            setSelectedAuthor={setSelectedAuthor}
+            selectedArticleStatus={selectedArticleStatus}
+            setSelectedArticleStatus={setSelectedArticleStatus}
+            selectedPriority={selectedPriority}
+            setSelectedPriority={setSelectedPriority}
+            onResetAllFilters={() => {
+              setSelectedStatFilter(null);
+              setActiveTrendsenseFilterTitle(null);
+              setTrendsenseMatchedTopicIds(null);
+              setSelectedDeadlineRange('all');
+              setSelectedDeadlineStatus('all');
+              setSelectedDepartment('all');
+              setSelectedAuthor('all');
+              setSelectedArticleStatus('all');
+              setSelectedPriority('all');
+              setSelectedUserNeed('all');
+              setSelectedStatus('all');
+              setSearchTerm('');
+            }}
+          />
+
+          {/* ================= 2. TOP SECTION: TIN MỚI TRENDSENSE (TRÁI) & TIẾN ĐỘ ĐỀ TÀI (PHẢI) ================= */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
             {/* Box Tin mới - Trendsense (bên trái) */}
             <div className="lg:col-span-5 xl:col-span-4 flex flex-col">
               <TrendsenseNewsBox
@@ -287,13 +456,16 @@ export default function App() {
                 onFilterMatchedTopics={handleFilterMatchedTopics}
                 activeTrendsenseFilterTitle={activeTrendsenseFilterTitle}
                 onClearTrendsenseFilter={handleClearTrendsenseFilter}
+                userRole={currentUserRole}
+                onShowToast={showToast}
               />
             </div>
 
-            {/* Tiến độ đề tài Quan trọng (bên phải) */}
+            {/* Tiến độ đề tài (bên phải) */}
             <div className="lg:col-span-7 xl:col-span-8 flex flex-col">
               <ImportantTopicsStats
                 topics={topics}
+                userRole={currentUserRole}
                 selectedStatFilter={selectedStatFilter}
                 onSelectStatFilter={(filterKey) => {
                   setSelectedStatFilter(filterKey);
@@ -309,7 +481,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* ================= OPTIONAL COLLAPSIBLE NOTIFICATION BANNER ================= */}
+          {/* ================= 3. OPTIONAL COLLAPSIBLE NOTIFICATION BANNER ================= */}
           {showNotificationBanner && (
             <NotificationBanner
               notifications={notifications}
@@ -320,33 +492,7 @@ export default function App() {
             />
           )}
 
-          {/* ================= FILTER BAR & QUICK TABS ================= */}
-          <FilterBar
-            activeTab={activeTab}
-            setActiveTab={(tab) => {
-              setActiveTab(tab);
-              if (trendsenseMatchedTopicIds) handleClearTrendsenseFilter();
-            }}
-            tabCounts={tabCounts}
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            selectedStatus={selectedStatus}
-            setSelectedStatus={setSelectedStatus}
-            selectedUserNeed={selectedUserNeed}
-            setSelectedUserNeed={setSelectedUserNeed}
-            dateRange={dateRange}
-            setDateRange={setDateRange}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            onOpenCreateModal={() => {
-              setTrendsenseInitialData(null);
-              setIsCreateModalOpen(true);
-            }}
-            selectedStatFilter={selectedStatFilter}
-            onClearStatFilter={() => setSelectedStatFilter(null)}
-          />
-
-          {/* ================= ACTIVE TRENDSENSE FILTER BAR (KẾT QUẢ ĐỐI SOÁT - DƯỚI BỘ LỌC, TRÊN DANH SÁCH ĐỀ TÀI) ================= */}
+          {/* ================= 4. ACTIVE TRENDSENSE FILTER BAR (KẾT QUẢ ĐỐI SOÁT - TRÊN DANH SÁCH ĐỀ TÀI) ================= */}
           {activeTrendsenseFilterTitle && (
             <div id="trendsense-review-result-box" className="mb-4 bg-rose-50/90 border border-rose-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
               <div className="flex items-start sm:items-center space-x-2.5">
