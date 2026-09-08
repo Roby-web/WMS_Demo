@@ -12,7 +12,10 @@ import {
   Send,
   AlertCircle,
   Zap,
-  Tag
+  Tag,
+  ShieldAlert,
+  AlertTriangle,
+  Shield
 } from 'lucide-react';
 import { Topic, TopicStatus } from '../types';
 
@@ -81,13 +84,38 @@ export const TopicDetailModal: React.FC<TopicDetailModalProps> = ({
 
             {/* Tags */}
             <div className="flex flex-wrap items-center gap-2 mt-2.5">
+              {topic.isSensitive && (
+                <span className={`px-2.5 py-1 text-xs font-bold rounded-md inline-flex items-center gap-1.5 ${
+                  topic.sensitivityLevel === 3
+                    ? 'bg-rose-100 text-rose-900 border border-rose-300 ring-1 ring-rose-200'
+                    : topic.sensitivityLevel === 2
+                    ? 'bg-orange-100 text-orange-900 border border-orange-300'
+                    : 'bg-amber-100 text-amber-900 border border-amber-300'
+                }`}>
+                  {topic.sensitivityLevel === 3 ? (
+                    <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+                  ) : topic.sensitivityLevel === 2 ? (
+                    <AlertTriangle className="w-3.5 h-3.5 text-orange-600" />
+                  ) : (
+                    <Shield className="w-3.5 h-3.5 text-amber-600" />
+                  )}
+                  <span>
+                    {topic.sensitivityLevel === 3 
+                      ? 'Đề tài nhạy cảm Mức 3: Đặc biệt' 
+                      : topic.sensitivityLevel === 2 
+                      ? 'Đề tài nhạy cảm Mức 2: Tăng cường' 
+                      : 'Đề tài nhạy cảm Mức 1: Thông thường'}
+                  </span>
+                </span>
+              )}
+
               {(topic.fromTrendsense || topic.tags?.includes('Trendsense')) && (
                 <span className="px-2.5 py-0.5 text-xs font-bold rounded bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1">
                   <Zap className="w-3.5 h-3.5 text-rose-600 fill-rose-100" />
                   Nguồn Trendsense
                 </span>
               )}
-              {topic.tags?.filter(t => t !== 'Trendsense').map((t) => (
+              {topic.tags?.filter(t => t !== 'Trendsense' && !t.startsWith('Nhạy cảm')).map((t) => (
                 <span key={t} className="px-2.5 py-0.5 text-xs font-semibold rounded bg-red-50 text-red-700 border border-red-200">
                   {t}
                 </span>
@@ -99,6 +127,52 @@ export const TopicDetailModal: React.FC<TopicDetailModalProps> = ({
               )}
             </div>
           </div>
+
+          {/* Cảnh báo chuyên biệt nếu là đề tài nhạy cảm */}
+          {topic.isSensitive && (
+            <div className={`p-4 rounded-xl border ${
+              topic.sensitivityLevel === 3 
+                ? 'bg-rose-50/80 border-rose-300' 
+                : topic.sensitivityLevel === 2 
+                ? 'bg-orange-50/80 border-orange-300' 
+                : 'bg-amber-50/80 border-amber-300'
+            }`}>
+              <div className="flex items-start gap-3">
+                <div className={`p-2 rounded-lg shrink-0 ${
+                  topic.sensitivityLevel === 3 
+                    ? 'bg-rose-600 text-white' 
+                    : topic.sensitivityLevel === 2 
+                    ? 'bg-orange-500 text-white' 
+                    : 'bg-amber-500 text-white'
+                }`}>
+                  <ShieldAlert className="w-5 h-5" />
+                </div>
+                <div className="flex-1 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm text-gray-900">
+                      Quy chế xử lý: Đề tài nhạy cảm cấp độ {topic.sensitivityLevel}
+                    </span>
+                    <span className={`px-2 py-0.5 font-bold rounded text-[10px] ${
+                      topic.sensitivityLevel === 3 ? 'bg-rose-200 text-rose-900' : 'bg-orange-200 text-orange-900'
+                    }`}>
+                      {topic.sensitivityLevel === 3 ? 'Báo cáo trực tiếp Ban biên tập' : 'Trưởng ban kiểm soát'}
+                    </span>
+                  </div>
+                  <p className="text-gray-700 mt-1 font-medium">
+                    <span className="font-bold text-gray-900">Lĩnh vực: </span>
+                    {topic.sensitivityCategory || 'Chung'}
+                  </p>
+                  <p className="text-gray-600 mt-1 leading-relaxed">
+                    {topic.sensitivityLevel === 3
+                      ? '⚠️ Đề tài nhạy cảm Mức 3 (Đặc biệt) thuộc diện kiểm duyệt tối cao. Mọi nguồn tin, góc tiếp cận và bản thảo cần được báo cáo xin ý kiến chỉ đạo trực tiếp của Ban biên tập trước khi xuất bản.'
+                      : topic.sensitivityLevel === 2
+                      ? '⚡ Đề tài nhạy cảm Mức 2 (Tăng cường) yêu cầu Trưởng ban chuyên môn trực tiếp chỉ đạo định hướng và kiểm chứng nguồn tài liệu trước khi duyệt bài.'
+                      : 'ℹ️ Đề tài nhạy cảm Mức 1 (Thông thường) tuân thủ quy chuẩn biên tập và quy trình rà soát tiêu chuẩn.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Key metadata grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-gray-50 p-4 rounded-xl border border-gray-200 text-xs">

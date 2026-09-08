@@ -8,9 +8,10 @@ import { FilterBar } from './components/FilterBar';
 import { TopicsTable } from './components/TopicsTable';
 import { CreateTopicModal } from './components/CreateTopicModal';
 import { TopicDetailModal } from './components/TopicDetailModal';
+import { SensitiveLevel3Alert } from './components/SensitiveLevel3Alert';
 import { INITIAL_TOPICS, INITIAL_NOTIFICATIONS } from './data/mockData';
 import { Topic, TopicStatus, ActiveFilterTab, NotificationItem, TrendsenseNewsItem, UserRole } from './types';
-import { CheckCircle, AlertCircle, Info, Zap, X } from 'lucide-react';
+import { CheckCircle, AlertCircle, Info, Zap, X, ShieldAlert } from 'lucide-react';
 
 export default function App() {
   // User role state (Ban biên tập / Trưởng ban / Phóng viên)
@@ -32,6 +33,7 @@ export default function App() {
   const [selectedStatFilter, setSelectedStatFilter] = useState<string | null>(null);
   const [activeTrendsenseFilterTitle, setActiveTrendsenseFilterTitle] = useState<string | null>(null);
   const [trendsenseMatchedTopicIds, setTrendsenseMatchedTopicIds] = useState<string[] | null>(null);
+  const [filterOnlyLevel3Sensitive, setFilterOnlyLevel3Sensitive] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedUserNeed, setSelectedUserNeed] = useState('all');
@@ -54,10 +56,10 @@ export default function App() {
     trendsenseNewsId?: string;
   } | null>(null);
   const [selectedTopicDetail, setSelectedTopicDetail] = useState<Topic | null>(null);
-  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'info' | 'error'; text: string } | null>(null);
+  const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'info' | 'error' | 'warning'; text: string } | null>(null);
 
   // Helper to show brief toast notification
-  const showToast = (text: string, type: 'success' | 'info' | 'error' = 'success') => {
+  const showToast = (text: string, type: 'success' | 'info' | 'error' | 'warning' = 'success') => {
     setToastMessage({ text, type });
     setTimeout(() => {
       setToastMessage(null);
@@ -230,6 +232,15 @@ export default function App() {
         if (selectedPriority === 'important' && !topic.isImportant) return false;
         if (selectedPriority === 'trendsense' && !topic.fromTrendsense && !topic.tags?.includes('Trendsense')) return false;
         if (selectedPriority === 'editor' && !topic.isEditorAssigned && !topic.tags?.includes('Gửi BBT')) return false;
+        if (selectedPriority === 'sensitive_all' && !topic.isSensitive) return false;
+        if (selectedPriority === 'sensitive_level3' && (!topic.isSensitive || topic.sensitivityLevel !== 3)) return false;
+        if (selectedPriority === 'sensitive_level2' && (!topic.isSensitive || topic.sensitivityLevel !== 2)) return false;
+        if (selectedPriority === 'sensitive_level1' && (!topic.isSensitive || topic.sensitivityLevel !== 1)) return false;
+      }
+
+      // 11. Bộ lọc riêng cho Đề tài nhạy cảm Mức 3 (khi kích hoạt từ banner cảnh báo)
+      if (filterOnlyLevel3Sensitive) {
+        if (!topic.isSensitive || topic.sensitivityLevel !== 3) return false;
       }
 
       return true;
@@ -247,6 +258,7 @@ export default function App() {
     selectedAuthor,
     selectedArticleStatus,
     selectedPriority,
+    filterOnlyLevel3Sensitive,
     currentUserRole
   ]);
 
@@ -303,15 +315,33 @@ export default function App() {
       tags: newTopicData.tags || [],
       description: newTopicData.description || '',
       createdAt: new Date().toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      isSensitive: newTopicData.isSensitive,
+      sensitivityLevel: newTopicData.sensitivityLevel,
+      sensitivityCategory: newTopicData.sensitivityCategory,
     };
 
     setTopics([newTopic, ...topics]);
     setTrendsenseInitialData(null);
-    showToast(
-      newTopic.fromTrendsense 
-        ? `Đã giao đề tài từ Trendsense: "${newTopic.title.substring(0, 35)}..." thành công!` 
-        : `Đã tạo đề xuất đề tài "${newTopic.title.substring(0, 35)}..." thành công!`
-    );
+
+    // Nếu là Đề tài nhạy cảm Mức 3: Thêm thông báo tới Ban biên tập
+    if (newTopic.isSensitive && newTopic.sensitivityLevel === 3) {
+      const newNotif: NotificationItem = {
+        id: `notif-${Date.now()}`,
+        user: newTopic.author,
+        action: 'đã đề xuất đề tài nhạy cảm Mức 3 (Đặc biệt):',
+        topicTitle: newTopic.title,
+        timeAgo: 'Vừa xong',
+        type: 'warning',
+      };
+      setNotifications(prev => [newNotif, ...prev]);
+      showToast(`⚠️ Đề tài nhạy cảm Mức 3: Đã gửi cảnh báo khẩn cấp tới Ban biên tập!`, 'warning');
+    } else {
+      showToast(
+        newTopic.fromTrendsense 
+          ? `Đã giao đề tài từ Trendsense: "${newTopic.title.substring(0, 35)}..." thành công!` 
+          : `Đã tạo đề xuất đề tài "${newTopic.title.substring(0, 35)}..." thành công!`
+      );
+    }
   };
 
   const handleRequestCancel = (topicId: string, topicTitle: string) => {
@@ -399,9 +429,18 @@ export default function App() {
         />
 
         {/* Center Main Dashboard Canvas */}
-        <main id="main-content-dashboard" className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7 max-w-[1600px] mx-auto w-full space-y-4">
+        <main id="main-content-dashboard" className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7 max-w-[1600px] mx-auto w-full space-y-3.5">
           
-          {/* ================= 1. BỘ LỌC ĐƯA LÊN ĐẦU TIÊN (KÈM BỘ LỌC NÂNG CAO) ================= */}
+          {/* ================= BOX CẢNH BÁO NHỎ TRÊN CÙNG: ĐỀ TÀI NHẠY CẢM MỨC 3 (TRÊN BỘ LỌC THỜI GIAN) ================= */}
+          <SensitiveLevel3Alert
+            topics={topics}
+            userRole={currentUserRole}
+            onSelectTopic={(topic) => setSelectedTopicDetail(topic)}
+            onFilterLevel3={(active) => setFilterOnlyLevel3Sensitive(active)}
+            isFilteringLevel3={filterOnlyLevel3Sensitive}
+          />
+
+          {/* ================= 1. BỘ LỌC ĐƯA LÊN ĐẦU TIÊN (KÈM BỘ LỌC NÂNG CAO & BỘ LỌC THỜI GIAN) ================= */}
           <FilterBar
             userRole={currentUserRole}
             searchTerm={searchTerm}
@@ -442,6 +481,7 @@ export default function App() {
               setSelectedPriority('all');
               setSelectedUserNeed('all');
               setSelectedStatus('all');
+              setFilterOnlyLevel3Sensitive(false);
               setSearchTerm('');
             }}
           />
@@ -523,6 +563,22 @@ export default function App() {
                   <span>Xoá đối soát & Xem tất cả ({topics.length})</span>
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Thanh trạng thái đang lọc đề tài nhạy cảm Mức 3 */}
+          {filterOnlyLevel3Sensitive && (
+            <div id="filter-level3-status-bar" className="bg-rose-100/90 border border-rose-300 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
+              <div className="flex items-center space-x-2 text-xs font-bold text-rose-950">
+                <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>Đang lọc danh sách: Đề tài nhạy cảm Mức 3 (Đặc biệt) ({filteredTopics.length} đề tài)</span>
+              </div>
+              <button
+                onClick={() => setFilterOnlyLevel3Sensitive(false)}
+                className="text-xs font-bold text-rose-700 hover:text-rose-950 bg-white hover:bg-rose-50 border border-rose-300 px-3 py-1 rounded-lg transition-colors cursor-pointer"
+              >
+                Xoá lọc & Xem tất cả ({topics.length})
+              </button>
             </div>
           )}
 

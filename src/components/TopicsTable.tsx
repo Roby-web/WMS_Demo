@@ -5,7 +5,9 @@ import {
   Copy,
   AlertTriangle,
   Star,
-  Zap
+  Zap,
+  ShieldAlert,
+  Shield
 } from 'lucide-react';
 import { Topic, TopicStatus } from '../types';
 
@@ -87,7 +89,9 @@ export const TopicsTable: React.FC<TopicsTableProps> = ({
                 <tr
                   key={topic.id}
                   id={`topic-row-${topic.id}`}
-                  className="hover:bg-slate-50/60 transition-colors group"
+                  className={`hover:bg-slate-50/70 transition-colors group ${
+                    topic.isSensitive && topic.sensitivityLevel === 3 ? 'bg-rose-50/25 border-l-2 border-l-rose-500' : ''
+                  }`}
                 >
                   {/* STT */}
                   <td className="py-3 px-3 text-center font-medium text-gray-600 text-xs">
@@ -105,6 +109,23 @@ export const TopicsTable: React.FC<TopicsTableProps> = ({
                           <Star className="w-3.5 h-3.5 fill-amber-400" />
                         </span>
                       )}
+
+                      {/* Icon cảnh báo mức độ nhạy cảm trước tiêu đề */}
+                      {topic.isSensitive && (
+                        <span 
+                          title={`Đề tài nhạy cảm Mức ${topic.sensitivityLevel || 1}${topic.sensitivityCategory ? `: ${topic.sensitivityCategory}` : ''}`} 
+                          className="inline-flex items-center mt-0.5 shrink-0"
+                        >
+                          {topic.sensitivityLevel === 3 ? (
+                            <ShieldAlert className="w-4 h-4 text-rose-600 fill-rose-100 animate-pulse" />
+                          ) : topic.sensitivityLevel === 2 ? (
+                            <AlertTriangle className="w-3.5 h-3.5 text-orange-500 fill-orange-100" />
+                          ) : (
+                            <Shield className="w-3.5 h-3.5 text-amber-600 fill-amber-100" />
+                          )}
+                        </span>
+                      )}
+
                       <div>
                         <button
                           onClick={() => onSelectTopic(topic)}
@@ -114,6 +135,40 @@ export const TopicsTable: React.FC<TopicsTableProps> = ({
                         </button>
 
                         <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          {/* Nhận diện cấp độ nhạy cảm */}
+                          {topic.isSensitive && (
+                            <span 
+                              title={`Lĩnh vực: ${topic.sensitivityCategory || 'Chung'}`}
+                              className={`px-1.5 py-0.2 text-[10px] rounded-md inline-flex items-center gap-1 font-bold ${
+                                topic.sensitivityLevel === 3
+                                  ? 'bg-rose-100 text-rose-900 border border-rose-300 shadow-2xs'
+                                  : topic.sensitivityLevel === 2
+                                  ? 'bg-orange-50 text-orange-900 border border-orange-300'
+                                  : 'bg-amber-50 text-amber-900 border border-amber-200'
+                              }`}
+                            >
+                              {topic.sensitivityLevel === 3 ? (
+                                <ShieldAlert className="w-2.5 h-2.5 text-rose-600 shrink-0" />
+                              ) : topic.sensitivityLevel === 2 ? (
+                                <AlertTriangle className="w-2.5 h-2.5 text-orange-600 shrink-0" />
+                              ) : (
+                                <Shield className="w-2.5 h-2.5 text-amber-600 shrink-0" />
+                              )}
+                              <span>
+                                {topic.sensitivityLevel === 3 
+                                  ? 'Nhạy cảm Mức 3: Đặc biệt' 
+                                  : topic.sensitivityLevel === 2 
+                                  ? 'Nhạy cảm Mức 2: Tăng cường' 
+                                  : 'Nhạy cảm Mức 1'}
+                              </span>
+                              {topic.sensitivityCategory && (
+                                <span className="opacity-75 font-normal pl-1 border-l border-current/30 max-w-[220px] truncate">
+                                  {topic.sensitivityCategory}
+                                </span>
+                              )}
+                            </span>
+                          )}
+
                           {typeof topic.commentsCount === 'number' && topic.commentsCount > 0 && (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.2 text-[11px] font-medium text-gray-600 rounded bg-gray-100 border border-gray-200">
                               <MessageSquare className="w-3 h-3 text-gray-400" />

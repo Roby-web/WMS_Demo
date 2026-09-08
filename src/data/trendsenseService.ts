@@ -11,6 +11,7 @@ export const FALLBACK_TRENDSENSE_NEWS: TrendsenseNewsItem[] = [
     publishedAt: '2026-09-03 16:59:33',
     title: 'Hiện tượng El Niño có khả năng tăng cường, có thể trở thành mạnh nhất từng ghi nhận',
     rawDate: '2026-09-03 16:59:33',
+    feedType: 'important',
   },
   {
     id: 'ts-02',
@@ -18,6 +19,7 @@ export const FALLBACK_TRENDSENSE_NEWS: TrendsenseNewsItem[] = [
     publishedAt: '2026-09-03 16:48:46',
     title: 'Nhà thiết kế Phước Dio qua đời sau khi điều trị bệnh hiểm nghèo',
     rawDate: '2026-09-03 16:48:46',
+    feedType: 'my_feed',
   },
   {
     id: 'ts-03',
@@ -25,6 +27,7 @@ export const FALLBACK_TRENDSENSE_NEWS: TrendsenseNewsItem[] = [
     publishedAt: '2026-09-03 16:44:07',
     title: 'Công an Hưng Yên tạm giữ tài xế xe tải gây tai nạn chết người rồi bỏ trốn',
     rawDate: '2026-09-03 16:44:07',
+    feedType: 'my_feed',
   },
   {
     id: 'ts-04',
@@ -32,6 +35,7 @@ export const FALLBACK_TRENDSENSE_NEWS: TrendsenseNewsItem[] = [
     publishedAt: '2026-09-03 16:23:35',
     title: 'Hoa hậu Jang Jin Young qua đời do ung thư dạ dày giai đoạn cuối',
     rawDate: '2026-09-03 16:23:35',
+    feedType: 'my_feed',
   },
   {
     id: 'ts-05',
@@ -39,6 +43,7 @@ export const FALLBACK_TRENDSENSE_NEWS: TrendsenseNewsItem[] = [
     publishedAt: '2026-09-03 16:18:30',
     title: 'Hai người Palestine bị giết và nhiều người khác bị thương sau khi quân đội Israel mở hỏa lực tại Beit Lahiya',
     rawDate: '2026-09-03 16:18:30',
+    feedType: 'important',
   },
   {
     id: 'ts-06',
@@ -46,6 +51,7 @@ export const FALLBACK_TRENDSENSE_NEWS: TrendsenseNewsItem[] = [
     publishedAt: '2026-09-03 15:51:01',
     title: 'Cao tốc Bến Lức - Long Thành dự kiến thông xe sau 12 năm xây dựng',
     rawDate: '2026-09-03 15:51:01',
+    feedType: 'important',
   },
   {
     id: 'ts-07',
@@ -53,6 +59,7 @@ export const FALLBACK_TRENDSENSE_NEWS: TrendsenseNewsItem[] = [
     publishedAt: '2026-09-03 15:35:20',
     title: 'Giá vàng trong nước lập đỉnh mới, vượt mốc 88 triệu đồng/lượng chiều mua vào',
     rawDate: '2026-09-03 15:35:20',
+    feedType: 'important',
   },
   {
     id: 'ts-08',
@@ -60,6 +67,7 @@ export const FALLBACK_TRENDSENSE_NEWS: TrendsenseNewsItem[] = [
     publishedAt: '2026-09-03 15:10:45',
     title: 'OpenAI ra mắt mô hình AI thế hệ mới hỗ trợ xử lý dữ liệu truyền thông đa phương tiện',
     rawDate: '2026-09-03 15:10:45',
+    feedType: 'important',
   },
   {
     id: 'ts-09',
@@ -67,6 +75,7 @@ export const FALLBACK_TRENDSENSE_NEWS: TrendsenseNewsItem[] = [
     publishedAt: '2026-09-03 14:55:12',
     title: 'Đội tuyển bóng chuyền nữ Việt Nam giành vé lịch sử dự giải Vô địch thế giới 2026',
     rawDate: '2026-09-03 14:55:12',
+    feedType: 'my_feed',
   },
   {
     id: 'ts-10',
@@ -74,6 +83,7 @@ export const FALLBACK_TRENDSENSE_NEWS: TrendsenseNewsItem[] = [
     publishedAt: '2026-09-03 14:30:00',
     title: 'Bộ GD&ĐT công bố định dạng đề thi tốt nghiệp THPT theo chương trình giáo dục mới',
     rawDate: '2026-09-03 14:30:00',
+    feedType: 'my_feed',
   },
   {
     id: 'ts-11',
@@ -81,6 +91,7 @@ export const FALLBACK_TRENDSENSE_NEWS: TrendsenseNewsItem[] = [
     publishedAt: '2026-09-03 14:15:30',
     title: 'Hà Nội ghi nhận lượng mưa kỷ lục trong đợt chuyển mùa đầu tháng 9, ngập cục bộ nhiều tuyến',
     rawDate: '2026-09-03 14:15:30',
+    feedType: 'my_feed',
   },
   {
     id: 'ts-12',
@@ -88,6 +99,7 @@ export const FALLBACK_TRENDSENSE_NEWS: TrendsenseNewsItem[] = [
     publishedAt: '2026-09-03 13:50:18',
     title: 'Đoạn trên cao tuyến đường sắt đô thị Nhổn - Ga Hà Nội chính thức vận hành thương mại',
     rawDate: '2026-09-03 13:50:18',
+    feedType: 'my_feed',
   },
   {
     id: 'ts-13',
@@ -95,6 +107,7 @@ export const FALLBACK_TRENDSENSE_NEWS: TrendsenseNewsItem[] = [
     publishedAt: '2026-09-03 13:20:40',
     title: 'Cảnh báo khẩn cấp sạt lở bờ sông Tiền, di dời hơn 150 hộ dân trong đêm',
     rawDate: '2026-09-03 13:20:40',
+    feedType: 'important',
   },
   {
     id: 'ts-14',
@@ -102,6 +115,7 @@ export const FALLBACK_TRENDSENSE_NEWS: TrendsenseNewsItem[] = [
     publishedAt: '2026-09-03 12:45:00',
     title: 'Khai mạc Festival di sản và văn hóa truyền thống các dân tộc năm 2026',
     rawDate: '2026-09-03 12:45:00',
+    feedType: 'my_feed',
   },
   {
     id: 'ts-15',
@@ -109,6 +123,7 @@ export const FALLBACK_TRENDSENSE_NEWS: TrendsenseNewsItem[] = [
     publishedAt: '2026-09-03 12:10:25',
     title: 'FED phát tín hiệu cân nhắc điều chỉnh lãi suất cơ bản trong phiên họp chính sách tháng 9',
     rawDate: '2026-09-03 12:10:25',
+    feedType: 'important',
   },
   {
     id: 'ts-16',
@@ -116,6 +131,7 @@ export const FALLBACK_TRENDSENSE_NEWS: TrendsenseNewsItem[] = [
     publishedAt: '2026-09-03 11:40:10',
     title: 'Phát hiện biến thể virus hô hấp mới tại khu vực Đông Nam Á, Bộ Y tế khuyến cáo phòng ngừa',
     rawDate: '2026-09-03 11:40:10',
+    feedType: 'important',
   },
 ];
 
@@ -255,6 +271,9 @@ export async function fetchTrendsenseNews(): Promise<TrendsenseNewsItem[]> {
 
       if (!title) continue;
 
+      const isImportantKeyword = /(quan trọng|khẩn cấp|kỷ lục|lập đỉnh|thông xe|đột phá|lịch sử|quốc tế|chiến sự|virus|el niño)/i.test(title);
+      const feedType: 'important' | 'my_feed' = isImportantKeyword ? 'important' : ((i % 2 === 1) ? 'important' : 'my_feed');
+
       items.push({
         id: `ts-${i}-${Date.now().toString(36)}`,
         department,
@@ -262,6 +281,7 @@ export async function fetchTrendsenseNews(): Promise<TrendsenseNewsItem[]> {
         rawDate: publishedAt,
         title,
         timeAgoText: formatTimeAgoVi(publishedAt, now),
+        feedType,
       });
     }
 

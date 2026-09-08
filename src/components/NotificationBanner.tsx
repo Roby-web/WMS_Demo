@@ -104,7 +104,11 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({
             <div>
               <p className="text-xs text-gray-800 leading-snug">
                 <strong className="font-bold text-gray-900">{notif.user}</strong>{' '}
-                <span className={notif.type === 'rejected' ? 'text-rose-600 font-medium' : notif.type === 'approved' ? 'text-emerald-700 font-medium' : 'text-gray-700'}>
+                <span className={
+                  notif.type === 'warning' ? 'text-rose-700 font-bold' :
+                  notif.type === 'rejected' ? 'text-rose-600 font-medium' : 
+                  notif.type === 'approved' ? 'text-emerald-700 font-medium' : 'text-gray-700'
+                }>
                   {notif.action}
                 </span>{' '}
                 <strong className="font-semibold text-gray-900 line-clamp-2">
@@ -114,6 +118,7 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({
             </div>
             <div className="mt-2 text-[11px] text-gray-400 flex items-center justify-between">
               <span>{notif.timeAgo}</span>
+              {notif.type === 'warning' && <span className="text-rose-700 text-[10px] bg-rose-100 font-bold px-1.5 py-0.5 rounded border border-rose-300">Nhạy cảm Mức 3</span>}
               {notif.type === 'rejected' && <span className="text-rose-500 text-[10px] bg-rose-50 px-1.5 py-0.5 rounded">Từ chối</span>}
               {notif.type === 'approved' && <span className="text-emerald-600 text-[10px] bg-emerald-50 px-1.5 py-0.5 rounded">Đã duyệt</span>}
               {notif.type === 'accepted' && <span className="text-blue-600 text-[10px] bg-blue-50 px-1.5 py-0.5 rounded">Gia hạn</span>}

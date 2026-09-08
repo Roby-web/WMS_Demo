@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Sparkles, Star, Calendar, User, Building, Globe, Zap } from 'lucide-react';
-import { Topic, TopicStatus } from '../types';
+import { X, Plus, Sparkles, Star, Calendar, User, Building, Globe, Zap, ShieldAlert, AlertTriangle, Shield, CheckCircle2 } from 'lucide-react';
+import { Topic, TopicStatus, SensitivityLevel, SENSITIVITY_CATEGORIES, SENSITIVITY_LEVELS } from '../types';
 
 interface CreateTopicModalProps {
   isOpen: boolean;
@@ -31,6 +31,11 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
   const [userNeed, setUserNeed] = useState('Update');
   const [tags, setTags] = useState<string[]>(['Gửi BBT', 'Ưu tiên']);
   const [description, setDescription] = useState('');
+
+  // Đề tài nhạy cảm
+  const [isSensitive, setIsSensitive] = useState<boolean>(false);
+  const [sensitivityLevel, setSensitivityLevel] = useState<SensitivityLevel>(1);
+  const [sensitivityCategory, setSensitivityCategory] = useState<string>(SENSITIVITY_CATEGORIES[0]);
 
   // Update form fields when opening modal or receiving initialData
   useEffect(() => {
@@ -78,6 +83,18 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
       ? ['Trendsense', ...tags] 
       : tags.filter(t => fromTrendsense || t !== 'Trendsense');
 
+    // Tự động gán tag nhạy cảm nếu có
+    const tagsWithSensitivity = [...finalTags];
+    if (isSensitive) {
+      const sensTag = `Nhạy cảm Mức ${sensitivityLevel}`;
+      if (!tagsWithSensitivity.includes(sensTag)) {
+        tagsWithSensitivity.push(sensTag);
+      }
+      if (sensitivityLevel === 3 && !tagsWithSensitivity.includes('Gửi BBT')) {
+        tagsWithSensitivity.push('Gửi BBT');
+      }
+    }
+
     onSubmit({
       title: title.trim(),
       department,
@@ -90,14 +107,20 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
       fromTrendsense,
       trendsenseNewsId: initialData?.trendsenseNewsId,
       userNeed,
-      tags: finalTags,
+      tags: tagsWithSensitivity,
       description: description.trim() || (fromTrendsense ? 'Đề tài được phát hiện và giao từ nguồn tin tức Trendsense.' : ''),
       commentsCount: 0,
+      isSensitive,
+      sensitivityLevel: isSensitive ? sensitivityLevel : undefined,
+      sensitivityCategory: isSensitive ? sensitivityCategory : undefined,
     });
 
     // Reset
     setTitle('');
     setDescription('');
+    setIsSensitive(false);
+    setSensitivityLevel(1);
+    setSensitivityCategory(SENSITIVITY_CATEGORIES[0]);
     onClose();
   };
 
@@ -110,13 +133,13 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
       <div 
         id="modal-create-topic"
-        className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+        className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-150"
       >
-        {/* Modal Header */}
-        <div className="px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between">
+        {/* Modal Header - Cố định */}
+        <div className="shrink-0 px-6 py-3.5 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Plus className="w-5 h-5 text-amber-400" />
             <h3 className="font-bold text-base text-white">
@@ -132,7 +155,9 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
         </div>
 
         {/* Modal Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          {/* Vùng nội dung form cuộn độc lập */}
+          <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3.5">
           {/* Tên đề tài */}
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">
@@ -209,6 +234,119 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-rose-500"
               />
             </div>
+          </div>
+
+          {/* ================= KHỐI ĐỀ TÀI NHẠY CẢM ================= */}
+          <div className={`p-3.5 rounded-xl border transition-all ${
+            isSensitive 
+              ? 'bg-rose-50/60 border-rose-200 ring-1 ring-rose-200' 
+              : 'bg-gray-50 border-gray-200'
+          }`}>
+            <label className="flex items-start justify-between cursor-pointer">
+              <div className="flex items-start space-x-2.5">
+                <input
+                  id="checkbox-is-sensitive"
+                  type="checkbox"
+                  checked={isSensitive}
+                  onChange={(e) => setIsSensitive(e.target.checked)}
+                  className="rounded text-rose-600 focus:ring-rose-500 w-4 h-4 cursor-pointer mt-0.5"
+                />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                      <ShieldAlert className={`w-3.5 h-3.5 ${isSensitive ? 'text-rose-600' : 'text-gray-400'}`} />
+                      Đề tài nhạy cảm
+                    </span>
+                    {isSensitive && (
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        sensitivityLevel === 3 
+                          ? 'bg-rose-600 text-white shadow-xs' 
+                          : sensitivityLevel === 2 
+                          ? 'bg-orange-500 text-white' 
+                          : 'bg-amber-500 text-white'
+                      }`}>
+                        {sensitivityLevel === 3 ? 'Mức 3: Đặc biệt' : sensitivityLevel === 2 ? 'Mức 2: Tăng cường' : 'Mức 1: Thông thường'}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    Phóng viên đánh dấu nếu đề tài liên quan đến chính trị, an ninh, pháp luật hoặc các lĩnh vực đặc biệt cần kiểm soát.
+                  </p>
+                </div>
+              </div>
+            </label>
+
+            {/* Khi tích chọn Đề tài nhạy cảm: hiển thị chọn Mức độ & Lĩnh vực */}
+            {isSensitive && (
+              <div className="mt-3.5 pt-3 border-t border-rose-200/80 space-y-3 animate-in fade-in duration-150">
+                {/* 1. Mức độ nhạy cảm */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-bold text-gray-800 flex items-center gap-1">
+                      <span>Mức độ nhạy cảm</span>
+                      <span className="text-red-500">*</span>
+                    </label>
+                    {sensitivityLevel === 3 && (
+                      <span className="text-[11px] font-bold text-rose-600 flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        Sẽ thông báo ngay cho Ban biên tập trên đầu Trang đề tài
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    {SENSITIVITY_LEVELS.map((item) => {
+                      const isSelected = sensitivityLevel === item.level;
+                      const activeClass = 
+                        item.level === 3 
+                          ? (isSelected ? 'border-rose-600 bg-rose-100/70 text-rose-900 ring-1 ring-rose-500' : 'border-gray-200 bg-white hover:border-rose-300 text-gray-700')
+                          : item.level === 2
+                          ? (isSelected ? 'border-orange-500 bg-orange-100/70 text-orange-900 ring-1 ring-orange-500' : 'border-gray-200 bg-white hover:border-orange-300 text-gray-700')
+                          : (isSelected ? 'border-amber-500 bg-amber-100/70 text-amber-900 ring-1 ring-amber-500' : 'border-gray-200 bg-white hover:border-amber-300 text-gray-700');
+
+                      return (
+                        <button
+                          type="button"
+                          key={item.level}
+                          id={`btn-sensitivity-level-${item.level}`}
+                          onClick={() => setSensitivityLevel(item.level)}
+                          className={`p-2.5 rounded-lg border text-left transition-all cursor-pointer flex flex-col justify-between ${activeClass}`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-bold text-xs">
+                              {item.name}
+                            </span>
+                            {isSelected && <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-current" />}
+                          </div>
+                          <span className="text-[10.5px] opacity-80 leading-snug">
+                            {item.description}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Lĩnh vực nhạy cảm */}
+                <div>
+                  <label className="block text-xs font-bold text-gray-800 mb-1">
+                    Lĩnh vực nhạy cảm <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="select-sensitivity-category"
+                    value={sensitivityCategory}
+                    onChange={(e) => setSensitivityCategory(e.target.value)}
+                    className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs font-medium text-gray-900 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  >
+                    {SENSITIVITY_CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Quan trọng & Hạn chót */}
@@ -311,7 +449,7 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
               Ghi chú nội dung đề tài
             </label>
             <textarea
-              rows={3}
+              rows={2}
               placeholder="Tóm tắt ý tưởng, góc nhìn, nguồn tin cần khai thác..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -319,17 +457,20 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
             />
           </div>
 
-          {/* Footer Actions */}
-          <div className="pt-3 border-t border-gray-200 flex items-center justify-end space-x-3">
+          </div>
+
+          {/* Footer Actions - Luôn ghim cố định ở đáy modal */}
+          <div className="shrink-0 px-6 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-end space-x-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200/70 rounded-lg transition-colors cursor-pointer"
             >
               Huỷ
             </button>
             <button
               type="submit"
+              id="btn-submit-create-topic"
               className="px-5 py-2 text-sm font-bold text-white bg-[#be185d] hover:bg-[#9d174d] rounded-lg transition-colors shadow-xs cursor-pointer"
             >
               {fromTrendsense ? 'Tạo & Giao đề tài' : 'Tạo đề tài'}

@@ -321,6 +321,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               <option value="important">Đề tài Quan trọng</option>
               <option value="trendsense">Tin từ Trendsense</option>
               <option value="editor">Gửi BBT</option>
+              <option value="sensitive_all">Đề tài nhạy cảm (Tất cả)</option>
+              <option value="sensitive_level3">⚠️ Nhạy cảm Mức 3: Đặc biệt</option>
+              <option value="sensitive_level2">⚡ Nhạy cảm Mức 2: Tăng cường</option>
+              <option value="sensitive_level1">ℹ️ Nhạy cảm Mức 1: Thông thường</option>
             </select>
           </div>
 
@@ -410,7 +414,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             )}
             {selectedPriority !== 'all' && (
               <span className="px-2 py-0.5 rounded bg-rose-50 border border-rose-200 text-rose-800">
-                {selectedPriority === 'important' ? 'Quan trọng' : selectedPriority === 'trendsense' ? 'Trendsense' : 'Gửi BBT'}
+                {selectedPriority === 'important' ? 'Quan trọng' : 
+                 selectedPriority === 'trendsense' ? 'Trendsense' : 
+                 selectedPriority === 'sensitive_all' ? 'Đề tài nhạy cảm' :
+                 selectedPriority === 'sensitive_level3' ? 'Nhạy cảm Mức 3' :
+                 selectedPriority === 'sensitive_level2' ? 'Nhạy cảm Mức 2' :
+                 selectedPriority === 'sensitive_level1' ? 'Nhạy cảm Mức 1' : 'Gửi BBT'}
               </span>
             )}
             {selectedStatFilter && (
