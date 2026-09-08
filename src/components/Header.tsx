@@ -148,8 +148,39 @@ export const Header: React.FC<HeaderProps> = ({
           </nav>
         </div>
 
-        {/* Right Side: Notification & User Profile (3 cấp) */}
-        <div className="flex items-center space-x-3 sm:space-x-4">
+        {/* Right Side: 3-Level Menu Selector, Notification & User Profile */}
+        <div className="flex items-center space-x-2 sm:space-x-3">
+          {/* 3-Level Workflow Menu Selector: Phóng viên -> Trưởng ban -> Ban biên tập */}
+          <div className="hidden sm:flex items-center bg-gray-100 p-1 rounded-xl border border-gray-200" id="header-3-level-menu">
+            <span className="text-[10px] font-bold text-gray-500 uppercase px-1.5 tracking-wider">Cấp:</span>
+            {(['Phóng viên', 'Trưởng ban', 'Ban biên tập'] as UserRole[]).map((role, idx) => {
+              const isSelected = userRole === role;
+              return (
+                <button
+                  key={role}
+                  id={`header-role-btn-${idx + 1}`}
+                  type="button"
+                  onClick={() => setUserRole(role)}
+                  className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                    isSelected 
+                      ? 'bg-white text-gray-900 shadow-xs font-bold ring-1 ring-black/5' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white/60'
+                  }`}
+                  title={`Chuyển sang cấp ${role}`}
+                >
+                  <span className={`w-4 h-4 rounded-full text-[10px] flex items-center justify-center font-bold ${
+                    isSelected 
+                      ? (role === 'Ban biên tập' ? 'bg-indigo-600 text-white' : role === 'Trưởng ban' ? 'bg-amber-600 text-white' : 'bg-slate-700 text-white')
+                      : 'bg-gray-300 text-gray-700'
+                  }`}>
+                    {idx + 1}
+                  </span>
+                  <span>{role}</span>
+                </button>
+              );
+            })}
+          </div>
+
           {/* Notification bell button */}
           <button
             id="btn-toggle-notification-bell"
@@ -171,7 +202,7 @@ export const Header: React.FC<HeaderProps> = ({
               id="user-role-dropdown-btn"
               onClick={() => setIsRoleMenuOpen(!isRoleMenuOpen)}
               className="flex items-center space-x-2 pl-2 sm:pl-3 border-l border-gray-200 py-1 rounded-md hover:bg-gray-50 transition-colors text-left cursor-pointer focus:outline-none"
-              title="Nhấn để đổi cấp người dùng (Ban biên tập / Trưởng ban / Phóng viên)"
+              title="Nhấn để đổi cấp người dùng (Phóng viên / Trưởng ban / Ban biên tập)"
             >
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border shadow-2xs ${currentRoleInfo.badgeColor}`}>
                 {currentRoleInfo.code}
@@ -194,18 +225,17 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <div className="px-3.5 py-2 border-b border-gray-100 flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-gray-500">
-                    Phân cấp người dùng (3 cấp)
+                    Chọn cấp người dùng (3 cấp)
                   </span>
-                  <span className="text-[10px] font-semibold bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">
-                    Demo
+                  <span className="text-[10px] font-semibold bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded">
+                    Luồng 3 cấp
                   </span>
                 </div>
 
                 <div className="p-1.5 space-y-1">
-                  {(['Ban biên tập', 'Trưởng ban', 'Phóng viên'] as UserRole[]).map((role) => {
+                  {(['Phóng viên', 'Trưởng ban', 'Ban biên tập'] as UserRole[]).map((role, idx) => {
                     const info = ROLE_CONFIG[role];
                     const isSelected = userRole === role;
-                    const IconComp = info.icon;
 
                     return (
                       <button
@@ -222,7 +252,7 @@ export const Header: React.FC<HeaderProps> = ({
                         }`}
                       >
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border shrink-0 mt-0.5 ${info.badgeColor}`}>
-                          {info.code}
+                          {idx + 1}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
@@ -237,7 +267,9 @@ export const Header: React.FC<HeaderProps> = ({
                             )}
                           </div>
                           <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">
-                            {info.desc}
+                            {role === 'Phóng viên' && 'Cấp 1: Đề xuất đề tài và tích chọn mức nhạy cảm (1, 2, 3)'}
+                            {role === 'Trưởng ban' && 'Cấp 2: Nhận thông báo Mức 2 & 3, thẩm duyệt đề tài Mức 3'}
+                            {role === 'Ban biên tập' && 'Cấp 3: Nhận thông báo Mức 3, chỉ đạo & thay đổi mức nhạy cảm'}
                           </p>
                         </div>
                       </button>
@@ -246,7 +278,7 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
 
                 <div className="mt-1 pt-2 border-t border-gray-100 px-3.5 py-1 text-[11px] text-gray-400 bg-gray-50/70 rounded-b-lg">
-                  * Thay đổi cấp sẽ cập nhật quyền và dữ liệu hiển thị tương ứng ở Box Trendsense.
+                  * Chọn từng cấp ở menu để trải nghiệm đầy đủ luồng duyệt đề tài nhạy cảm.
                 </div>
               </div>
             )}

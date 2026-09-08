@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
-import { ImportantTopicsStats } from './components/ImportantTopicsStats';
+import { ImportantTopicsStats, getTopicArticleWorkflow } from './components/ImportantTopicsStats';
 import { TrendsenseNewsBox } from './components/TrendsenseNewsBox';
 import { NotificationBanner } from './components/NotificationBanner';
 import { FilterBar } from './components/FilterBar';
@@ -10,7 +10,7 @@ import { CreateTopicModal } from './components/CreateTopicModal';
 import { TopicDetailModal } from './components/TopicDetailModal';
 import { SensitiveLevel3Alert } from './components/SensitiveLevel3Alert';
 import { INITIAL_TOPICS, INITIAL_NOTIFICATIONS } from './data/mockData';
-import { Topic, TopicStatus, ActiveFilterTab, NotificationItem, TrendsenseNewsItem, UserRole } from './types';
+import { Topic, TopicStatus, ActiveFilterTab, NotificationItem, TrendsenseNewsItem, UserRole, SensitivityLevel } from './types';
 import { CheckCircle, AlertCircle, Info, Zap, X, ShieldAlert } from 'lucide-react';
 
 export default function App() {
@@ -34,6 +34,7 @@ export default function App() {
   const [activeTrendsenseFilterTitle, setActiveTrendsenseFilterTitle] = useState<string | null>(null);
   const [trendsenseMatchedTopicIds, setTrendsenseMatchedTopicIds] = useState<string[] | null>(null);
   const [filterOnlyLevel3Sensitive, setFilterOnlyLevel3Sensitive] = useState<boolean>(false);
+  const [filterOnlyLevel2Sensitive, setFilterOnlyLevel2Sensitive] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedUserNeed, setSelectedUserNeed] = useState('all');
@@ -88,8 +89,69 @@ export default function App() {
 
       // 1. Statistics Card Drilldown Filter
       if (selectedStatFilter) {
-        // BBT Filters
-        if (selectedStatFilter === 'all_important') {
+        // === 3 BOX MỚI: TIẾN ĐỘ ĐỀ TÀI QUAN TRỌNG ===
+        
+        // Nhóm 1: Quan trọng - Quá hạn: hạn đăng ngày hôm qua (06/01/2026), chưa xuất bản
+        if (selectedStatFilter.startsWith('imp_overdue_yesterday')) {
+          if (!topic.isImportant) return false;
+          if (getTopicArticleWorkflow(topic) === 'Published') return false;
+          const isOverdueYesterday = 
+            topic.deadlineDate === '2026-01-06' || 
+            topic.daysUntilDeadline === -1 || 
+            (topic.daysUntilDeadline < 0 && topic.deadlineDate <= '2026-01-06') ||
+            (topic.status === 'Quá hạn' && topic.deadlineDate <= '2026-01-06');
+          if (!isOverdueYesterday) return false;
+
+          if (selectedStatFilter === 'imp_overdue_yesterday_Created') {
+            if (getTopicArticleWorkflow(topic) !== 'Created') return false;
+          } else if (selectedStatFilter === 'imp_overdue_yesterday_Verifying') {
+            if (getTopicArticleWorkflow(topic) !== 'Verifying') return false;
+          } else if (selectedStatFilter === 'imp_overdue_yesterday_Publishing') {
+            if (getTopicArticleWorkflow(topic) !== 'Publishing') return false;
+          }
+        }
+
+        // Nhóm 2: Quan trọng - Đến hạn hôm nay: hạn đăng hôm nay (07/01/2026)
+        else if (selectedStatFilter.startsWith('imp_due_today')) {
+          if (!topic.isImportant) return false;
+          const isDueToday = 
+            topic.isDueToday || 
+            topic.daysUntilDeadline === 0 || 
+            topic.deadlineDate === '2026-01-07';
+          if (!isDueToday) return false;
+
+          if (selectedStatFilter === 'imp_due_today_Created') {
+            if (getTopicArticleWorkflow(topic) !== 'Created') return false;
+          } else if (selectedStatFilter === 'imp_due_today_Verifying') {
+            if (getTopicArticleWorkflow(topic) !== 'Verifying') return false;
+          } else if (selectedStatFilter === 'imp_due_today_Publishing') {
+            if (getTopicArticleWorkflow(topic) !== 'Publishing') return false;
+          } else if (selectedStatFilter === 'imp_due_today_Published') {
+            if (getTopicArticleWorkflow(topic) !== 'Published') return false;
+          }
+        }
+
+        // Nhóm 3: Quan trọng - Sắp đến hạn (ngày mai): hạn đăng ngày mai (08/01/2026)
+        else if (selectedStatFilter.startsWith('imp_due_tomorrow')) {
+          if (!topic.isImportant) return false;
+          const isDueTomorrow = 
+            topic.daysUntilDeadline === 1 || 
+            topic.deadlineDate === '2026-01-08';
+          if (!isDueTomorrow) return false;
+
+          if (selectedStatFilter === 'imp_due_tomorrow_Created') {
+            if (getTopicArticleWorkflow(topic) !== 'Created') return false;
+          } else if (selectedStatFilter === 'imp_due_tomorrow_Verifying') {
+            if (getTopicArticleWorkflow(topic) !== 'Verifying') return false;
+          } else if (selectedStatFilter === 'imp_due_tomorrow_Publishing') {
+            if (getTopicArticleWorkflow(topic) !== 'Publishing') return false;
+          } else if (selectedStatFilter === 'imp_due_tomorrow_Published') {
+            if (getTopicArticleWorkflow(topic) !== 'Published') return false;
+          }
+        }
+
+        // BBT Filters cũ (hỗ trợ tương thích ngược nếu có)
+        else if (selectedStatFilter === 'all_important') {
           if (!topic.isImportant) return false;
         } else if (selectedStatFilter === 'range_1_to_7') {
           if (!topic.isImportant) return false;
@@ -243,6 +305,11 @@ export default function App() {
         if (!topic.isSensitive || topic.sensitivityLevel !== 3) return false;
       }
 
+      // 12. Bộ lọc riêng cho Đề tài nhạy cảm Mức 2 (khi kích hoạt từ banner cảnh báo)
+      if (filterOnlyLevel2Sensitive) {
+        if (!topic.isSensitive || topic.sensitivityLevel !== 2) return false;
+      }
+
       return true;
     });
   }, [
@@ -259,6 +326,7 @@ export default function App() {
     selectedArticleStatus,
     selectedPriority,
     filterOnlyLevel3Sensitive,
+    filterOnlyLevel2Sensitive,
     currentUserRole
   ]);
 
@@ -318,29 +386,255 @@ export default function App() {
       isSensitive: newTopicData.isSensitive,
       sensitivityLevel: newTopicData.sensitivityLevel,
       sensitivityCategory: newTopicData.sensitivityCategory,
+      isDepartmentHeadApproved: false,
     };
 
     setTopics([newTopic, ...topics]);
     setTrendsenseInitialData(null);
 
-    // Nếu là Đề tài nhạy cảm Mức 3: Thêm thông báo tới Ban biên tập
-    if (newTopic.isSensitive && newTopic.sensitivityLevel === 3) {
-      const newNotif: NotificationItem = {
-        id: `notif-${Date.now()}`,
-        user: newTopic.author,
-        action: 'đã đề xuất đề tài nhạy cảm Mức 3 (Đặc biệt):',
-        topicTitle: newTopic.title,
-        timeAgo: 'Vừa xong',
-        type: 'warning',
-      };
-      setNotifications(prev => [newNotif, ...prev]);
-      showToast(`⚠️ Đề tài nhạy cảm Mức 3: Đã gửi cảnh báo khẩn cấp tới Ban biên tập!`, 'warning');
+    // ================= XỬ LÝ THEO QUY TRÌNH 3 CẤP ĐỀ TÀI NHẠY CẢM =================
+    // Phóng viên đề xuất đề tài tích chọn nhạy cảm:
+    // - Mức 1: chỉ hiển thị nhận diện ở list (không thông báo đầu trang)
+    // - Mức 2: Trưởng ban nhận được thông báo trên đầu trang quản lý
+    // - Mức 3: Trưởng ban nhận được thông báo trên đầu. Nếu Trưởng ban duyệt (giữ nguyên Mức 3) thì Ban biên tập mới nhận được thông báo trên đầu trang.
+    if (newTopic.isSensitive) {
+      if (newTopic.sensitivityLevel === 3) {
+        const newNotif: NotificationItem = {
+          id: `notif-${Date.now()}`,
+          user: newTopic.author,
+          action: 'đã đề xuất đề tài nhạy cảm Mức 3 (Đặc biệt):',
+          topicTitle: newTopic.title,
+          timeAgo: 'Vừa xong',
+          type: 'warning',
+        };
+        setNotifications(prev => [newNotif, ...prev]);
+        showToast('⚠️ Đã gửi đề xuất Mức 3: Đã gửi thông báo tới Trưởng ban thẩm duyệt trước khi trình BBT!', 'warning');
+      } else if (newTopic.sensitivityLevel === 2) {
+        const newNotif: NotificationItem = {
+          id: `notif-${Date.now()}`,
+          user: newTopic.author,
+          action: 'đã đề xuất đề tài nhạy cảm Mức 2 (Tăng cường):',
+          topicTitle: newTopic.title,
+          timeAgo: 'Vừa xong',
+          type: 'info',
+        };
+        setNotifications(prev => [newNotif, ...prev]);
+        showToast('⚡ Đã gửi đề xuất Mức 2: Trưởng ban đã nhận được thông báo trên đầu trang quản lý!', 'info');
+      } else {
+        showToast('ℹ️ Đã đề xuất đề tài Mức 1: Chỉ hiển thị nhận diện ở danh sách đề tài.', 'info');
+      }
     } else {
       showToast(
         newTopic.fromTrendsense 
           ? `Đã giao đề tài từ Trendsense: "${newTopic.title.substring(0, 35)}..." thành công!` 
           : `Đã tạo đề xuất đề tài "${newTopic.title.substring(0, 35)}..." thành công!`
       );
+    }
+  };
+
+  // Trưởng ban duyệt đề tài nhạy cảm Mức 3:
+  // - Giữ nguyên Mức 3 -> Cảnh báo xuất hiện trên đầu trang của Ban biên tập
+  // - Hạ xuống Mức 2 -> Xử lý nội bộ cấp ban, không gửi cảnh báo tới Ban biên tập
+  const handleDepartmentHeadApproveSensitiveTopic = (
+    topicId: string, 
+    keepLevel3: boolean, 
+    note?: string
+  ) => {
+    const timeStr = new Date().toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+    setTopics(prev => prev.map(t => {
+      if (t.id === topicId) {
+        return keepLevel3 
+          ? {
+              ...t,
+              isDepartmentHeadApproved: true,
+              departmentHeadApprovedLevel: 3,
+              departmentHeadApprovedAt: timeStr,
+              departmentHeadNote: note || 'Trưởng ban đã thẩm định hồ sơ, giữ nguyên Mức 3 và trình Ban biên tập chỉ đạo.',
+              status: 'Đang triển khai' as TopicStatus,
+            }
+          : {
+              ...t,
+              isDepartmentHeadApproved: true,
+              sensitivityLevel: 2,
+              departmentHeadApprovedLevel: 2,
+              departmentHeadApprovedAt: timeStr,
+              departmentHeadNote: note || 'Trưởng ban đã phê duyệt và hạ xuống Mức 2 để xử lý tại Ban chuyên môn.',
+              status: 'Đang triển khai' as TopicStatus,
+            };
+      }
+      return t;
+    }));
+
+    if (selectedTopicDetail && selectedTopicDetail.id === topicId) {
+      setSelectedTopicDetail(prev => prev ? {
+        ...prev,
+        isDepartmentHeadApproved: true,
+        departmentHeadApprovedLevel: keepLevel3 ? 3 : 2,
+        sensitivityLevel: keepLevel3 ? 3 : 2,
+        departmentHeadApprovedAt: timeStr,
+        departmentHeadNote: note,
+        status: 'Đang triển khai' as TopicStatus,
+      } : null);
+    }
+
+    if (keepLevel3) {
+      showToast('✅ Trưởng ban đã DUYỆT & GIỮ NGUYÊN MỨC 3. Ban biên tập đã nhận được thông báo trên đầu trang!', 'warning');
+      const targetTopic = topics.find(t => t.id === topicId);
+      if (targetTopic) {
+        setNotifications(prev => [
+          {
+            id: `notif-${Date.now()}`,
+            user: 'Trưởng ban ' + targetTopic.department,
+            action: 'đã duyệt đề tài nhạy cảm Mức 3 và trình Ban biên tập:',
+            topicTitle: targetTopic.title,
+            timeAgo: 'Vừa xong',
+            type: 'warning',
+          },
+          ...prev
+        ]);
+      }
+    } else {
+      showToast('⚡ Trưởng ban đã duyệt và hạ xuống Mức 2 (xử lý nội bộ ban, không trình BBT).', 'info');
+    }
+  };
+
+  // Ban biên tập phát lệnh chỉ đạo định hướng đề tài Mức 3
+  const handleEditorialDirective = (topicId: string, directive: string) => {
+    setTopics(prev => prev.map(t => {
+      if (t.id === topicId) {
+        return {
+          ...t,
+          editorialBoardDirective: directive,
+          editorialBoardApproved: true,
+        };
+      }
+      return t;
+    }));
+
+    if (selectedTopicDetail && selectedTopicDetail.id === topicId) {
+      setSelectedTopicDetail(prev => prev ? {
+        ...prev,
+        editorialBoardDirective: directive,
+        editorialBoardApproved: true,
+      } : null);
+    }
+
+    showToast('✅ Ban biên tập đã ban hành ý kiến chỉ đạo định hướng xuất bản!', 'success');
+  };
+
+  // Ban biên tập thay đổi mức nhạy cảm
+  const handleChangeSensitivityLevel = (
+    topicId: string, 
+    newLevel: SensitivityLevel | 0, 
+    reason?: string
+  ) => {
+    const targetTopic = topics.find(t => t.id === topicId);
+    const oldLevel = targetTopic?.sensitivityLevel;
+
+    setTopics(prev => prev.map(t => {
+      if (t.id === topicId) {
+        const isSensitive = newLevel > 0;
+        const sensitivityLevel = newLevel > 0 ? (newLevel as SensitivityLevel) : undefined;
+        return {
+          ...t,
+          isSensitive,
+          sensitivityLevel,
+          editorialBoardDirective: reason || t.editorialBoardDirective,
+          editorialBoardApproved: true,
+        };
+      }
+      return t;
+    }));
+
+    if (selectedTopicDetail && selectedTopicDetail.id === topicId) {
+      setSelectedTopicDetail(prev => prev ? {
+        ...prev,
+        isSensitive: newLevel > 0,
+        sensitivityLevel: newLevel > 0 ? (newLevel as SensitivityLevel) : undefined,
+        editorialBoardDirective: reason || prev.editorialBoardDirective,
+        editorialBoardApproved: true,
+      } : null);
+    }
+
+    const levelName = newLevel === 3 
+      ? 'Mức 3: Đặc biệt' 
+      : newLevel === 2 
+      ? 'Mức 2: Tăng cường' 
+      : newLevel === 1 
+      ? 'Mức 1: Thông thường' 
+      : 'Không nhạy cảm (Đã bỏ)';
+
+    showToast(`✅ Ban biên tập đã đổi mức nhạy cảm thành: ${levelName}`, 'success');
+
+    setNotifications(prev => [
+      {
+        id: `notif-${Date.now()}`,
+        user: 'Ban biên tập',
+        action: `đã thay đổi mức nhạy cảm (từ Mức ${oldLevel || 'khác'} ➔ ${levelName}) cho đề tài:`,
+        topicTitle: targetTopic?.title || '',
+        timeAgo: 'Vừa xong',
+        type: 'warning',
+      },
+      ...prev
+    ]);
+  };
+
+  // Tạo nhanh đề tài mẫu kiểm tra luồng 3 cấp
+  const handleQuickCreateSampleTopic = (level: 1 | 2 | 3) => {
+    const timestamp = Date.now();
+    const timeStr = new Date().toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    
+    let title = '';
+    let category = '';
+    let dept = 'Thời sự - Chính trị';
+
+    if (level === 1) {
+      title = `[Mức 1] Theo dõi biến động nguồn cung và chuỗi cung ứng nông sản xuất khẩu ${timestamp % 1000}`;
+      category = 'An ninh phi truyền thống: tài chính - tiền tệ, năng lượng, dịch bệnh, thảm họa';
+      dept = 'Kinh doanh';
+    } else if (level === 2) {
+      title = `[Mức 2] Rà soát quy hoạch đất đai và bảo tồn kiến trúc di sản khu vực nội đô ${timestamp % 1000}`;
+      category = 'Lịch sử, danh nhân, sản phẩm khai thác lịch sử';
+      dept = 'Đô thị - Quy hoạch';
+    } else {
+      title = `[Mức 3] Điều tra độc quyền dấu hiệu sai phạm đấu thầu thiết bị y tế ${timestamp % 1000}`;
+      category = 'Tư pháp, điều tra, phòng chống tham nhũng, Chống phá nhà nước, phản động';
+      dept = 'Pháp luật - Điều tra';
+    }
+
+    const newTopic: Topic = {
+      id: `t-demo-${timestamp}`,
+      stt: topics.length + 1,
+      title,
+      author: 'Nguyễn Văn Hùng (PV)',
+      department: dept,
+      status: 'Chờ duyệt',
+      deadline: '8/1, 20:00',
+      deadlineDate: '2026-01-08',
+      isDueToday: false,
+      daysUntilDeadline: 1,
+      isImportant: true,
+      isEditorAssigned: false,
+      userNeed: 'Mới',
+      commentsCount: 1,
+      tags: ['Demo 3 cấp', `Mức ${level}`],
+      description: `Đề tài thử nghiệm kiểm tra luồng 3 cấp (Mức ${level}).`,
+      createdAt: timeStr,
+      isSensitive: true,
+      sensitivityLevel: level,
+      sensitivityCategory: category,
+      isDepartmentHeadApproved: false,
+    };
+
+    setTopics(prev => [newTopic, ...prev]);
+
+    if (level === 1) {
+      showToast('✅ Đã tạo test Mức 1: Chỉ hiển thị nhận diện ở danh sách đề tài (không có cảnh báo đầu trang)!', 'info');
+    } else if (level === 2) {
+      showToast('⚡ Đã tạo test Mức 2: Trưởng ban đã nhận thông báo trên đầu trang quản lý!', 'info');
+    } else {
+      showToast('⚠️ Đã tạo test Mức 3: Trưởng ban nhận thông báo đầu trang để duyệt trước khi trình BBT!', 'warning');
     }
   };
 
@@ -429,18 +723,67 @@ export default function App() {
         />
 
         {/* Center Main Dashboard Canvas */}
-        <main id="main-content-dashboard" className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7 max-w-[1600px] mx-auto w-full space-y-3.5">
+        <main id="main-content-dashboard" className="flex-1 overflow-y-auto p-3.5 sm:p-5 max-w-[1600px] mx-auto w-full space-y-2.5">
           
-          {/* ================= BOX CẢNH BÁO NHỎ TRÊN CÙNG: ĐỀ TÀI NHẠY CẢM MỨC 3 (TRÊN BỘ LỌC THỜI GIAN) ================= */}
+          {/* ================= BOX CẢNH BÁO TRÊN ĐẦU: ĐỀ TÀI NHẠY CẢM THEO LUỒNG 3 CẤP ================= */}
           <SensitiveLevel3Alert
             topics={topics}
             userRole={currentUserRole}
             onSelectTopic={(topic) => setSelectedTopicDetail(topic)}
             onFilterLevel3={(active) => setFilterOnlyLevel3Sensitive(active)}
             isFilteringLevel3={filterOnlyLevel3Sensitive}
+            onFilterLevel2={(active) => setFilterOnlyLevel2Sensitive(active)}
+            isFilteringLevel2={filterOnlyLevel2Sensitive}
+            onDepartmentHeadApprove={handleDepartmentHeadApproveSensitiveTopic}
+            onEditorialDirective={handleEditorialDirective}
+            onChangeSensitivityLevel={handleChangeSensitivityLevel}
+            onQuickSwitchRole={(role) => {
+              setCurrentUserRole(role);
+              showToast(`Đã chuyển sang vai trò: ${role}`, 'info');
+            }}
+            onQuickCreateSampleTopic={handleQuickCreateSampleTopic}
+            onOpenCreateModal={() => {
+              setTrendsenseInitialData(null);
+              setIsCreateModalOpen(true);
+            }}
           />
 
-          {/* ================= 1. BỘ LỌC ĐƯA LÊN ĐẦU TIÊN (KÈM BỘ LỌC NÂNG CAO & BỘ LỌC THỜI GIAN) ================= */}
+          {/* ================= HÀNG 2 CỘT: BOX TRENDSENSE (BÊN TRÁI - GIẢM WIDTH, CHO SCROLL) & TIẾN ĐỘ QUAN TRỌNG (BÊN PHẢI - 3 BLOCK) ================= */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 sm:gap-3 items-stretch">
+            {/* Box Bên Trái: Trendsense - Giảm width (chiếm 4/12 trên màn hình lớn), cuộn nội bộ */}
+            <div className="w-full h-full flex flex-col lg:col-span-5 xl:col-span-4 min-w-0">
+              <TrendsenseNewsBox
+                topics={topics}
+                onOpenCreateModalWithTrendsense={handleOpenCreateModalFromTrendsense}
+                onFilterMatchedTopics={handleFilterMatchedTopics}
+                activeTrendsenseFilterTitle={activeTrendsenseFilterTitle}
+                onClearTrendsenseFilter={handleClearTrendsenseFilter}
+                userRole={currentUserRole}
+                onShowToast={showToast}
+              />
+            </div>
+
+            {/* Box Bên Phải: Tiến độ đề tài quan trọng - Rộng rãi với 3 block */}
+            <div className="w-full h-full flex flex-col lg:col-span-7 xl:col-span-8 min-w-0">
+              <ImportantTopicsStats
+                topics={topics}
+                userRole={currentUserRole}
+                selectedStatFilter={selectedStatFilter}
+                onSelectStatFilter={(filterKey) => {
+                  setSelectedStatFilter(filterKey);
+                  if (filterKey) {
+                    setActiveTrendsenseFilterTitle(null);
+                    setTrendsenseMatchedTopicIds(null);
+                  }
+                }}
+                showNotificationBanner={showNotificationBanner}
+                onToggleNotificationBanner={() => setShowNotificationBanner(!showNotificationBanner)}
+                notificationCount={notifications.length}
+              />
+            </div>
+          </div>
+
+          {/* ================= 3. TOÀN BỘ BỘ LỌC (CHUYỂN XUỐNG DƯỚI BOX TIN MỚI & TIẾN ĐỘ) ================= */}
           <FilterBar
             userRole={currentUserRole}
             searchTerm={searchTerm}
@@ -485,41 +828,6 @@ export default function App() {
               setSearchTerm('');
             }}
           />
-
-          {/* ================= 2. TOP SECTION: TIN MỚI TRENDSENSE (TRÁI) & TIẾN ĐỘ ĐỀ TÀI (PHẢI) ================= */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-            {/* Box Tin mới - Trendsense (bên trái) */}
-            <div className="lg:col-span-5 xl:col-span-4 flex flex-col">
-              <TrendsenseNewsBox
-                topics={topics}
-                onOpenCreateModalWithTrendsense={handleOpenCreateModalFromTrendsense}
-                onFilterMatchedTopics={handleFilterMatchedTopics}
-                activeTrendsenseFilterTitle={activeTrendsenseFilterTitle}
-                onClearTrendsenseFilter={handleClearTrendsenseFilter}
-                userRole={currentUserRole}
-                onShowToast={showToast}
-              />
-            </div>
-
-            {/* Tiến độ đề tài (bên phải) */}
-            <div className="lg:col-span-7 xl:col-span-8 flex flex-col">
-              <ImportantTopicsStats
-                topics={topics}
-                userRole={currentUserRole}
-                selectedStatFilter={selectedStatFilter}
-                onSelectStatFilter={(filterKey) => {
-                  setSelectedStatFilter(filterKey);
-                  if (filterKey) {
-                    setActiveTrendsenseFilterTitle(null);
-                    setTrendsenseMatchedTopicIds(null);
-                  }
-                }}
-                showNotificationBanner={showNotificationBanner}
-                onToggleNotificationBanner={() => setShowNotificationBanner(!showNotificationBanner)}
-                notificationCount={notifications.length}
-              />
-            </div>
-          </div>
 
           {/* ================= 3. OPTIONAL COLLAPSIBLE NOTIFICATION BANNER ================= */}
           {showNotificationBanner && (
@@ -614,6 +922,10 @@ export default function App() {
         onClose={() => setSelectedTopicDetail(null)}
         onUpdateStatus={handleStatusChange}
         onToggleImportant={handleToggleImportant}
+        userRole={currentUserRole}
+        onDepartmentHeadApprove={handleDepartmentHeadApproveSensitiveTopic}
+        onEditorialDirective={handleEditorialDirective}
+        onChangeSensitivityLevel={handleChangeSensitivityLevel}
       />
     </div>
   );

@@ -7,9 +7,24 @@ export type UserRole = 'Ban biên tập' | 'Trưởng ban' | 'Phóng viên';
 export type SensitivityLevel = 1 | 2 | 3;
 
 export const SENSITIVITY_LEVELS = [
-  { level: 1 as const, name: 'Mức 1: Thông thường', shortName: 'Mức 1', description: 'Theo dõi thường quy, tuân thủ quy chuẩn biên tập' },
-  { level: 2 as const, name: 'Mức 2: Tăng cường', shortName: 'Mức 2', description: 'Cần Trưởng ban duyệt góc tiếp cận, kiểm chứng nguồn tin chặt chẽ' },
-  { level: 3 as const, name: 'Mức 3: Đặc biệt', shortName: 'Mức 3', description: 'Báo cáo trực tiếp Ban biên tập chỉ đạo, kiểm duyệt trước khi xuất bản' },
+  { 
+    level: 1 as const, 
+    name: 'Mức 1: Thông thường', 
+    shortName: 'Mức 1', 
+    description: 'Chỉ hiển thị nhận diện ở danh sách đề tài (không gửi thông báo lên đầu trang).' 
+  },
+  { 
+    level: 2 as const, 
+    name: 'Mức 2: Tăng cường', 
+    shortName: 'Mức 2', 
+    description: 'Trưởng ban nhận được thông báo trên đầu trang quản lý để xem xét, chỉ đạo.' 
+  },
+  { 
+    level: 3 as const, 
+    name: 'Mức 3: Đặc biệt', 
+    shortName: 'Mức 3', 
+    description: 'Trưởng ban nhận thông báo trên đầu trang; sau khi Trưởng ban duyệt giữ nguyên Mức 3, Ban biên tập mới nhận thông báo trên đầu trang.' 
+  },
 ];
 
 export const SENSITIVITY_CATEGORIES = [
@@ -24,6 +39,8 @@ export const SENSITIVITY_CATEGORIES = [
 ] as const;
 
 export type SensitivityCategory = typeof SENSITIVITY_CATEGORIES[number];
+
+export type ArticleWorkflowStatus = 'Created' | 'Verifying' | 'Publishing' | 'Published';
 
 export interface Topic {
   id: string;
@@ -48,10 +65,18 @@ export interface Topic {
   description?: string;
   createdAt: string;
   articleStatus?: 'Chưa tạo bài' | 'Đã tạo bài' | string;
+  articleWorkflowStatus?: ArticleWorkflowStatus;
   publishPeriod?: 'in_range_1_7' | 'after_7' | 'no_deadline';
   isSensitive?: boolean;
   sensitivityLevel?: SensitivityLevel;
   sensitivityCategory?: string;
+  // Luồng 3 cấp duyệt đề tài nhạy cảm
+  isDepartmentHeadApproved?: boolean; // Trưởng ban đã duyệt
+  departmentHeadApprovedLevel?: SensitivityLevel; // Mức sau khi Trưởng ban duyệt
+  departmentHeadApprovedAt?: string;
+  departmentHeadNote?: string;
+  editorialBoardDirective?: string; // Ban biên tập chỉ đạo
+  editorialBoardApproved?: boolean;
 }
 
 export interface TrendsenseNewsItem {
@@ -70,7 +95,7 @@ export interface NotificationItem {
   action: string;
   topicTitle: string;
   timeAgo: string;
-  type: 'approved' | 'rejected' | 'accepted' | 'comment' | 'warning';
+  type: 'approved' | 'rejected' | 'accepted' | 'comment' | 'warning' | 'info';
 }
 
 export type ActiveFilterTab = 'all' | 'assigned' | 'important' | 'completed' | 'in_progress' | 'overdue' | 'trendsense_matched';

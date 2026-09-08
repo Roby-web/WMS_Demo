@@ -135,7 +135,7 @@ export const TopicsTable: React.FC<TopicsTableProps> = ({
                         </button>
 
                         <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                          {/* Nhận diện cấp độ nhạy cảm */}
+                          {/* Nhận diện cấp độ nhạy cảm theo luồng 3 cấp */}
                           {topic.isSensitive && (
                             <span 
                               title={`Lĩnh vực: ${topic.sensitivityCategory || 'Chung'}`}
@@ -158,11 +158,29 @@ export const TopicsTable: React.FC<TopicsTableProps> = ({
                                 {topic.sensitivityLevel === 3 
                                   ? 'Nhạy cảm Mức 3: Đặc biệt' 
                                   : topic.sensitivityLevel === 2 
-                                  ? 'Nhạy cảm Mức 2: Tăng cường' 
+                                  ? 'Nhạy cảm Mức 2' 
                                   : 'Nhạy cảm Mức 1'}
                               </span>
+
+                              {/* Tiến trình thẩm duyệt cho Mức 3 */}
+                              {topic.sensitivityLevel === 3 && (
+                                <span className={`text-[9px] font-semibold px-1 py-0.2 rounded ${
+                                  topic.editorialBoardDirective
+                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                    : topic.isDepartmentHeadApproved
+                                    ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                    : 'bg-rose-200/80 text-rose-950 border border-rose-300'
+                                }`}>
+                                  {topic.editorialBoardDirective
+                                    ? 'BBT đã chỉ đạo'
+                                    : topic.isDepartmentHeadApproved
+                                    ? 'Trưởng ban đã duyệt ➔ BBT'
+                                    : 'Chờ Trưởng ban duyệt'}
+                                </span>
+                              )}
+
                               {topic.sensitivityCategory && (
-                                <span className="opacity-75 font-normal pl-1 border-l border-current/30 max-w-[220px] truncate">
+                                <span className="opacity-75 font-normal pl-1 border-l border-current/30 max-w-[180px] truncate hidden sm:inline">
                                   {topic.sensitivityCategory}
                                 </span>
                               )}
@@ -198,8 +216,23 @@ export const TopicsTable: React.FC<TopicsTableProps> = ({
                   </td>
 
                   {/* Bài viết */}
-                  <td className="py-3 px-4 text-xs font-normal text-gray-700 whitespace-nowrap">
-                    {articleStateText}
+                  <td className="py-3 px-4 text-xs whitespace-nowrap">
+                    <div className="flex flex-col gap-1 items-start">
+                      <span className="font-normal text-gray-700">{articleStateText}</span>
+                      {topic.articleWorkflowStatus && (
+                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wide ${
+                          topic.articleWorkflowStatus === 'Created' 
+                            ? 'bg-slate-100 text-slate-700 border border-slate-300/80' 
+                            : topic.articleWorkflowStatus === 'Verifying'
+                            ? 'bg-amber-50 text-amber-800 border border-amber-300/80'
+                            : topic.articleWorkflowStatus === 'Publishing'
+                            ? 'bg-blue-50 text-blue-800 border border-blue-300/80'
+                            : 'bg-emerald-50 text-emerald-800 border border-emerald-300/80'
+                        }`}>
+                          {topic.articleWorkflowStatus}
+                        </span>
+                      )}
+                    </div>
                   </td>
 
                   {/* Hạn đăng bài */}

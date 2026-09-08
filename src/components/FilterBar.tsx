@@ -82,6 +82,27 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     selectedPriority !== 'all'
   ].filter(Boolean).length;
 
+  const getStatFilterDisplayLabel = (filterKey: string) => {
+    switch (filterKey) {
+      case 'imp_overdue_yesterday': return 'Quá hạn (Hôm qua)';
+      case 'imp_overdue_yesterday_Created': return 'Quá hạn: Created';
+      case 'imp_overdue_yesterday_Verifying': return 'Quá hạn: Verifying';
+      case 'imp_overdue_yesterday_Publishing': return 'Quá hạn: Publishing';
+      case 'imp_overdue_yesterday_Published': return 'Quá hạn: Published';
+      case 'imp_due_today': return 'Đến hạn hôm nay';
+      case 'imp_due_today_Created': return 'Đến hạn hôm nay: Created';
+      case 'imp_due_today_Verifying': return 'Đến hạn hôm nay: Verifying';
+      case 'imp_due_today_Publishing': return 'Đến hạn hôm nay: Publishing';
+      case 'imp_due_today_Published': return 'Đến hạn hôm nay: Published';
+      case 'imp_due_tomorrow': return 'Sắp đến hạn (Ngày mai)';
+      case 'imp_due_tomorrow_Created': return 'Sắp đến hạn: Created';
+      case 'imp_due_tomorrow_Verifying': return 'Sắp đến hạn: Verifying';
+      case 'imp_due_tomorrow_Publishing': return 'Sắp đến hạn: Publishing';
+      case 'imp_due_tomorrow_Published': return 'Sắp đến hạn: Published';
+      default: return filterKey;
+    }
+  };
+
   const handleResetAdvanced = () => {
     setSelectedUserNeed('all');
     if (setSelectedDeadlineRange) setSelectedDeadlineRange('all');
@@ -424,7 +445,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             )}
             {selectedStatFilter && (
               <span className="px-2 py-0.5 rounded bg-rose-100 border border-rose-300 text-rose-900 font-medium">
-                Thống kê: {selectedStatFilter}
+                Thống kê: {getStatFilterDisplayLabel(selectedStatFilter)}
               </span>
             )}
           </div>

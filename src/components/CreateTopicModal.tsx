@@ -104,10 +104,13 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
       isDueToday,
       daysUntilDeadline: isDueToday ? 0 : 2,
       deadline,
+      deadlineDate: isDueToday ? '2026-01-07' : '2026-01-09',
       fromTrendsense,
       trendsenseNewsId: initialData?.trendsenseNewsId,
       userNeed,
       tags: tagsWithSensitivity,
+      articleStatus: 'Chưa tạo bài',
+      articleWorkflowStatus: 'Created',
       description: description.trim() || (fromTrendsense ? 'Đề tài được phát hiện và giao từ nguồn tin tức Trendsense.' : ''),
       commentsCount: 0,
       isSensitive,
@@ -281,15 +284,27 @@ export const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
               <div className="mt-3.5 pt-3 border-t border-rose-200/80 space-y-3 animate-in fade-in duration-150">
                 {/* 1. Mức độ nhạy cảm */}
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
                     <label className="text-xs font-bold text-gray-800 flex items-center gap-1">
-                      <span>Mức độ nhạy cảm</span>
+                      <span>Mức độ nhạy cảm (Luồng 3 cấp)</span>
                       <span className="text-red-500">*</span>
                     </label>
                     {sensitivityLevel === 3 && (
                       <span className="text-[11px] font-bold text-rose-600 flex items-center gap-1">
                         <AlertTriangle className="w-3 h-3" />
-                        Sẽ thông báo ngay cho Ban biên tập trên đầu Trang đề tài
+                        Trưởng ban nhận thông báo đầu trang; Trưởng ban duyệt giữ Mức 3 mới tới BBT
+                      </span>
+                    )}
+                    {sensitivityLevel === 2 && (
+                      <span className="text-[11px] font-bold text-orange-600 flex items-center gap-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        Trưởng ban nhận được thông báo trên đầu trang quản lý
+                      </span>
+                    )}
+                    {sensitivityLevel === 1 && (
+                      <span className="text-[11px] font-medium text-amber-700 flex items-center gap-1">
+                        <Shield className="w-3 h-3" />
+                        Chỉ hiển thị nhận diện ở danh sách đề tài (không gửi thông báo lên đầu trang)
                       </span>
                     )}
                   </div>

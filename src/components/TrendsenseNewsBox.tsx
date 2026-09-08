@@ -31,7 +31,7 @@ export const TrendsenseNewsBox: React.FC<TrendsenseNewsBoxProps> = ({
   const [news, setNews] = useState<TrendsenseNewsItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(() => new Date(Date.now() - 3 * 60 * 1000));
-  const [timeAgoText, setTimeAgoText] = useState<string>("Cập nhật 3' trước");
+  const [timeAgoText, setTimeAgoText] = useState<string>("3' trước");
 
   // 2 Tabs: 'important' (Important News) & 'my_feed' (My Feed)
   const [activeTab, setActiveTab] = useState<'important' | 'my_feed'>('important');
@@ -43,11 +43,11 @@ export const TrendsenseNewsBox: React.FC<TrendsenseNewsBoxProps> = ({
   // Helper to format time ago for last updated
   const getFormattedUpdatedTime = (date: Date): string => {
     const diffSec = Math.floor((Date.now() - date.getTime()) / 1000);
-    if (diffSec < 45) return 'Cập nhật vừa xong';
+    if (diffSec < 45) return 'Vừa xong';
     const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `Cập nhật ${diffMin}' trước`;
+    if (diffMin < 60) return `${diffMin}' trước`;
     const diffHours = Math.floor(diffMin / 60);
-    return `Cập nhật ${diffHours}h trước`;
+    return `${diffHours}h trước`;
   };
 
   // Keep timeAgoText updated
@@ -89,7 +89,7 @@ export const TrendsenseNewsBox: React.FC<TrendsenseNewsBoxProps> = ({
 
   const handleOpenMyFeed = () => {
     setIsMyFeedModalOpen(true);
-    onShowToast?.('Chuyển hướng sang trang chủ Trendsense để cấu hình My Feed...', 'info');
+    onShowToast?.('Mở cấu hình My Feed Trendsense...', 'info');
   };
 
   const getDepartmentColor = (dept: string) => {
@@ -116,23 +116,39 @@ export const TrendsenseNewsBox: React.FC<TrendsenseNewsBoxProps> = ({
   };
 
   // Tách tin thành 2 danh sách theo 2 tab
+  // Trường hợp cấp Trưởng ban: không có dữ liệu tab Important News
+  const isTruongBan = userRole === 'Trưởng ban';
+
   const importantNewsList = useMemo(() => {
+    if (isTruongBan) {
+      return []; // Cấp Trưởng ban: không có dữ liệu Important News
+    }
     return news.filter(item => item.feedType === 'important');
-  }, [news]);
+  }, [news, isTruongBan]);
 
   const myFeedNewsList = useMemo(() => {
     return news.filter(item => item.feedType === 'my_feed');
   }, [news]);
 
-  // Danh sách tin hiển thị tương ứng với tab đang chọn
-  const displayNews = useMemo(() => {
-    const list = activeTab === 'important' ? importantNewsList : myFeedNewsList;
-    return list.slice(0, 15);
-  }, [activeTab, importantNewsList, myFeedNewsList]);
+  // Chỉ hiển thị tab Important News nếu có dữ liệu
+  const showImportantTab = importantNewsList.length > 0;
 
-  // Trường hợp Trưởng ban chưa có cấu hình My Feed khi chuyển sang tab My Feed
+  // Nếu không có tab Important News -> tự động chọn tab My Feed
+  useEffect(() => {
+    if (!showImportantTab && activeTab === 'important') {
+      setActiveTab('my_feed');
+    }
+  }, [showImportantTab, activeTab]);
+
+  // Danh sách tin hiển thị (cho phép scroll toàn bộ danh sách trong box)
+  const displayNews = useMemo(() => {
+    const list = (showImportantTab && activeTab === 'important') ? importantNewsList : myFeedNewsList;
+    return list;
+  }, [activeTab, showImportantTab, importantNewsList, myFeedNewsList]);
+
+  // Trường hợp Trưởng ban chưa có cấu hình My Feed khi ở tab My Feed
   const showEmptyFeedForTruongBan = 
-    userRole === 'Trưởng ban' && 
+    isTruongBan && 
     activeTab === 'my_feed' && 
     !isTruongBanSimulatedFeed;
 
@@ -140,123 +156,146 @@ export const TrendsenseNewsBox: React.FC<TrendsenseNewsBoxProps> = ({
     <>
       <section 
         id="trendsense-news-box" 
-        className="bg-white rounded-lg border border-gray-200/90 shadow-2xs p-3 h-full flex flex-col justify-between"
+        className="bg-white rounded-lg border border-gray-200/90 shadow-2xs px-3 py-2 sm:px-3 sm:py-2.5 h-full flex flex-col justify-between transition-all"
       >
-        {/* Box Header: Title + Realtime Indicator + Last updated */}
-        <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-gray-100">
-          <div className="flex items-center space-x-2">
-            <span className="relative flex h-2 w-2 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600"></span>
-            </span>
-            <h2 className="text-sm font-bold text-gray-900 flex items-center gap-1.5 whitespace-nowrap">
-              Tin mới - Trendsense
-            </h2>
-            <span className="text-[11px] text-gray-500 font-normal flex items-center gap-1 pl-1">
-              <Clock className="w-3 h-3 text-gray-400 shrink-0" />
-              <span>{timeAgoText}</span>
-            </span>
-          </div>
-
-          <div className="flex items-center space-x-1.5">
-            <button
-              onClick={handleRefresh}
-              title="Làm mới dữ liệu từ Trendsense"
-              className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer shrink-0"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-rose-600' : ''}`} />
-            </button>
-          </div>
-        </div>
-
-        {/* 2 TABS: Important News & My Feed */}
-        <div className="flex items-center border-b border-gray-100 mb-2">
-          <div className="flex items-center space-x-1">
-            {/* Tab 1: Important News */}
-            <button
-              id="tab-trendsense-important"
-              onClick={() => setActiveTab('important')}
-              className={`px-3 py-1.5 text-xs font-bold rounded-t-lg transition-all flex items-center gap-1.5 border-b-2 cursor-pointer ${
-                activeTab === 'important'
-                  ? 'border-rose-600 text-rose-700 bg-rose-50/60'
-                  : 'border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50'
-              }`}
-            >
-              <Flame className={`w-3.5 h-3.5 ${activeTab === 'important' ? 'text-rose-600 fill-rose-600/20' : 'text-gray-400'}`} />
-              <span>Important News</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                activeTab === 'important' ? 'bg-rose-600 text-white' : 'bg-gray-100 text-gray-600'
-              }`}>
-                {importantNewsList.length}
+        {/* Box Header: Title + Tools ở hàng trên, Tabs "Important News" & "My Feed" ở hàng dưới */}
+        <div className="pb-1.5 mb-2 border-b border-gray-100">
+          {/* Hàng 1: Tiêu đề không bị cắt + Nhóm công cụ */}
+          <div className="flex items-center justify-between gap-1.5 mb-1.5">
+            <div className="flex items-center space-x-1.5 shrink-0">
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600"></span>
               </span>
-            </button>
+              <h2 className="text-xs sm:text-sm font-bold text-gray-900 whitespace-nowrap">
+                Tin mới - Trendsense
+              </h2>
+            </div>
+
+            {/* Right toolset: Time ago + Refresh + Xem thêm */}
+            <div className="flex items-center space-x-1.5 text-[11px] text-gray-500 shrink-0">
+              <span className="flex items-center gap-1 text-[10px] text-gray-400">
+                <Clock className="w-2.5 h-2.5 text-gray-400 shrink-0" />
+                <span>{timeAgoText}</span>
+              </span>
+
+              <button
+                onClick={handleRefresh}
+                title="Làm mới dữ liệu từ Trendsense"
+                className="p-1 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer shrink-0"
+              >
+                <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin text-rose-600' : ''}`} />
+              </button>
+
+              <a
+                href="#trendsense-home"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleOpenMyFeed();
+                }}
+                className="text-[10.5px] font-semibold text-rose-700 hover:text-rose-800 hover:underline inline-flex items-center gap-0.5 shrink-0"
+              >
+                <span>Xem thêm</span>
+                <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+            </div>
+          </div>
+
+          {/* Hàng 2: Tabs chuyển xuống dưới title */}
+          <div className="flex items-center bg-gray-100/90 p-0.5 rounded-lg border border-gray-200/60 w-fit">
+            {/* Tab 1: Important News - Ẩn khi không có dữ liệu */}
+            {showImportantTab && (
+              <button
+                id="tab-trendsense-important"
+                onClick={() => setActiveTab('important')}
+                className={`px-2 py-0.5 text-[10.5px] font-bold rounded-md transition-all flex items-center gap-1 cursor-pointer ${
+                  activeTab === 'important'
+                    ? 'bg-white text-rose-700 shadow-2xs'
+                    : 'text-gray-500 hover:text-gray-800'
+                }`}
+              >
+                <Flame className={`w-2.5 h-2.5 ${activeTab === 'important' ? 'text-rose-600 fill-rose-600/20' : 'text-gray-400'}`} />
+                <span>Important News</span>
+                {importantNewsList.length > 0 && (
+                  <span className={`text-[9px] px-1 py-0.1 rounded-full font-bold leading-tight ${
+                    activeTab === 'important' ? 'bg-rose-600 text-white' : 'bg-gray-200 text-gray-600'
+                  }`}>
+                    {importantNewsList.length}
+                  </span>
+                )}
+              </button>
+            )}
 
             {/* Tab 2: My Feed */}
             <button
               id="tab-trendsense-myfeed"
               onClick={() => setActiveTab('my_feed')}
-              className={`px-3 py-1.5 text-xs font-bold rounded-t-lg transition-all flex items-center gap-1.5 border-b-2 cursor-pointer ${
+              className={`px-2 py-0.5 text-[10.5px] font-bold rounded-md transition-all flex items-center gap-1 cursor-pointer ${
                 activeTab === 'my_feed'
-                  ? 'border-rose-600 text-rose-700 bg-rose-50/60'
-                  : 'border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                  ? 'bg-white text-rose-700 shadow-2xs'
+                  : 'text-gray-500 hover:text-gray-800'
               }`}
             >
-              <Rss className={`w-3.5 h-3.5 ${activeTab === 'my_feed' ? 'text-rose-600' : 'text-gray-400'}`} />
+              <Rss className={`w-2.5 h-2.5 ${activeTab === 'my_feed' ? 'text-rose-600' : 'text-gray-400'}`} />
               <span>My Feed</span>
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                activeTab === 'my_feed' ? 'bg-rose-600 text-white' : 'bg-gray-100 text-gray-600'
-              }`}>
-                {myFeedNewsList.length}
-              </span>
+              {myFeedNewsList.length > 0 && !showEmptyFeedForTruongBan && (
+                <span className={`text-[9px] px-1 py-0.1 rounded-full font-bold leading-tight ${
+                  activeTab === 'my_feed' ? 'bg-rose-600 text-white' : 'bg-gray-200 text-gray-600'
+                }`}>
+                  {myFeedNewsList.length}
+                </span>
+              )}
             </button>
           </div>
         </div>
 
         {/* Tab Content */}
         {showEmptyFeedForTruongBan ? (
-          /* Trạng thái chưa cấu hình My Feed cho Trưởng ban trong tab My Feed */
+          /* Trạng thái chưa cấu hình My Feed cho Trưởng ban - Banner nhỏ gọn */
           <div 
             id="trendsense-truongban-empty-state"
-            className="flex-1 flex flex-col items-center justify-center text-center p-3 my-auto bg-gray-50/70 border border-dashed border-gray-200 rounded-xl min-h-[160px]"
+            className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-rose-50/40 border border-dashed border-rose-200 rounded-lg text-xs"
           >
-            <div className="w-8 h-8 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 mb-1.5 shadow-xs">
-              <Sparkles className="w-4 h-4" />
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-rose-600 shrink-0" />
+              <p className="text-gray-800 font-medium text-[11px]">
+                Chưa có tin Trendsense phù hợp. Tạo My Feed để nhận gợi ý chuyên sâu.
+              </p>
             </div>
-            
-            <p className="text-xs text-gray-800 font-medium max-w-xs leading-relaxed mb-2 text-center">
-              Chưa có tin từ Trendsense phù hợp với bạn. Hãy tạo My Feed của mình để được gợi ý các tin phù hợp
-            </p>
 
-            <div className="flex flex-col items-center justify-center gap-1.5 w-full">
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 id="btn-create-my-feed-truong-ban"
                 onClick={handleOpenMyFeed}
-                className="px-5 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-xs inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
+                className="px-2.5 py-1 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-md shadow-2xs inline-flex items-center gap-1 transition-colors cursor-pointer"
               >
-                <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                <Sparkles className="w-3 h-3 shrink-0" />
                 <span>Tạo My Feed</span>
               </button>
 
               <button
                 onClick={() => setIsTruongBanSimulatedFeed(true)}
-                className="text-[10.5px] text-gray-500 hover:text-gray-800 underline underline-offset-2 py-0.5 px-2 cursor-pointer whitespace-nowrap text-center"
+                className="text-[10px] text-gray-500 hover:text-gray-800 underline py-0.5 px-1 cursor-pointer"
                 title="Bấm để xem demo luồng tin sau khi Trưởng ban đã tạo My Feed"
               >
-                (Demo: xem tin sau khi tạo My Feed)
+                (Demo)
               </button>
             </div>
           </div>
         ) : (
-          /* Danh sách tin tức: Mặc định mỗi tin hiển thị button "Giao đề tài" */
-          <div className="flex-1 flex flex-col justify-between">
-            <div className="flex-1 flex flex-col gap-2 overflow-y-auto max-h-[175px] pr-1 scrollbar-thin">
+          /* Danh sách tin tức: Khung cuộn dọc nội bộ (Internal scrollable list) */
+          <div className="flex-1 min-h-0 flex flex-col">
+            <div 
+              id="trendsense-scrollable-news-list"
+              className="overflow-y-auto max-h-[105px] space-y-1.5 pr-1 [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-300"
+            >
               {isLoading && displayNews.length === 0 ? (
-                <div className="py-8 text-center text-xs text-gray-400 space-y-2">
-                  <RefreshCw className="w-5 h-5 animate-spin mx-auto text-rose-500" />
-                  <p>Đang tải tin từ Trendsense...</p>
+                <div className="py-4 text-center text-xs text-gray-400 flex items-center justify-center gap-2">
+                  <RefreshCw className="w-4 h-4 animate-spin text-rose-500" />
+                  <span>Đang tải tin từ Trendsense...</span>
                 </div>
               ) : displayNews.length === 0 ? (
-                <div className="py-8 text-center text-xs text-gray-500">
+                <div className="py-3 text-center text-xs text-gray-500">
                   Chưa có tin tức nào trong mục này.
                 </div>
               ) : (
@@ -265,66 +304,45 @@ export const TrendsenseNewsBox: React.FC<TrendsenseNewsBoxProps> = ({
                     <div 
                       key={item.id || index}
                       id={`trendsense-news-item-${index}`}
-                      className="p-2.5 rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-white hover:border-gray-200 transition-all text-xs flex flex-col justify-between shrink-0 shadow-2xs group"
+                      className="p-1.5 px-2 rounded-lg border border-gray-200/70 bg-gray-50/50 hover:bg-white hover:border-gray-300 transition-all text-xs flex items-center justify-between gap-2 shadow-2xs group"
                     >
-                      {/* Tiêu đề tin */}
-                      <h3 
-                        className="font-semibold text-gray-900 leading-snug line-clamp-2 mb-1 text-[12px]"
-                        title={item.title}
-                      >
-                        {item.title}
-                      </h3>
-
-                      {/* Thời gian sau tiêu đề tin */}
-                      <div className="flex items-center gap-1 text-[11px] text-gray-500 mb-2 font-normal">
-                        <Clock className="w-3 h-3 text-gray-400 shrink-0" />
-                        <span>{item.timeAgoText || formatTimeAgoVi(item.publishedAt)}</span>
-                      </div>
-
-                      {/* Action row: Tên chuyên mục thay thế "Tin tiêu điểm" + Button "Giao đề tài" bỏ nền đỏ */}
-                      <div className="pt-1.5 border-t border-gray-200/60 flex items-center justify-between gap-2 mt-auto">
-                        <span className={`px-1.5 py-0.5 text-[10.5px] font-semibold rounded border ${getDepartmentColor(item.department)}`}>
-                          {item.department}
-                        </span>
-
-                        <button
-                          id={`btn-assign-trendsense-${index}`}
-                          onClick={() => onOpenCreateModalWithTrendsense(item)}
-                          className="text-xs font-semibold text-gray-700 hover:text-gray-900 bg-white hover:bg-gray-100 border border-gray-300 active:scale-[0.98] px-2.5 py-1 rounded-md shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+                      {/* Tiêu đề tin & metadata */}
+                      <div className="min-w-0 flex-1">
+                        <h3 
+                          className="font-semibold text-gray-900 leading-snug truncate text-[11px] group-hover:text-rose-900"
+                          title={item.title}
                         >
-                          <PlusCircle className="w-3.5 h-3.5 stroke-[2.2] text-gray-500" />
-                          <span>Giao đề tài</span>
-                        </button>
+                          {item.title}
+                        </h3>
+                        <div className="flex items-center gap-1.5 mt-0.5 text-[9.5px]">
+                          <span className="text-gray-400 font-normal">
+                            {item.timeAgoText || formatTimeAgoVi(item.publishedAt)}
+                          </span>
+                        </div>
                       </div>
+
+                      {/* Nút giao đề tài */}
+                      <button
+                        id={`btn-assign-trendsense-${index}`}
+                        onClick={() => onOpenCreateModalWithTrendsense(item)}
+                        title="Giao đề tài từ tin này"
+                        className="text-[10px] font-semibold text-gray-700 hover:text-rose-700 bg-white hover:bg-rose-50 border border-gray-200 hover:border-rose-200 px-1.5 py-0.5 rounded shadow-2xs flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap shrink-0"
+                      >
+                        <PlusCircle className="w-3 h-3 stroke-[2.2] text-rose-600" />
+                        <span>Giao đề tài</span>
+                      </button>
                     </div>
                   );
                 })
-              )}
-
-              {/* Text link "Xem thêm" at bottom of the news list */}
-              {!isLoading && displayNews.length > 0 && (
-                <div className="pt-1 text-center border-t border-gray-100 mt-0.5">
-                  <a
-                    href="#trendsense-home"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleOpenMyFeed();
-                    }}
-                    className="inline-flex items-center justify-center gap-1 text-[11.5px] font-semibold text-rose-700 hover:text-rose-800 hover:underline py-0.5 px-2 transition-colors cursor-pointer"
-                  >
-                    <span>Xem thêm trên Trendsense</span>
-                    <ExternalLink className="w-3 h-3 shrink-0" />
-                  </a>
-                </div>
               )}
             </div>
 
             {/* Trưởng ban demo mode reset */}
             {userRole === 'Trưởng ban' && isTruongBanSimulatedFeed && activeTab === 'my_feed' && (
-              <div className="mt-1 pt-1 text-center border-t border-gray-100">
+              <div className="mt-1 pt-0.5 text-right">
                 <button
                   onClick={() => setIsTruongBanSimulatedFeed(false)}
-                  className="text-[10.5px] text-gray-500 hover:text-rose-700 underline cursor-pointer"
+                  className="text-[9.5px] text-gray-400 hover:text-rose-700 underline cursor-pointer"
                 >
                   (Quay lại trạng thái Chưa có My Feed)
                 </button>
